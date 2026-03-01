@@ -1,0 +1,5 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:poetry",
+    "python-envs.defaultPackageManager": "ms-python.python:poetry",
+    "python.defaultInterpreterPath": "/Users/shaotongsun/Library/Caches/pypoetry/virtualenvs/agent-test-4p2yFEQf-py3.13/bin/python"
+}

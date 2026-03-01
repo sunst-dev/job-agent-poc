@@ -1,0 +1,27 @@
+[project]
+name = "agent-test"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "python-dotenv>=1.2.1",
+    "flask (>=2.2,<3.0)",
+    "langgraph (>=1.0.10,<2.0.0)",
+    "langchain-openrouter (>=0.0.2,<0.0.3)",
+    "crewai>=0.100.0",
+    "litellm>=1.82.0",
+]
+
+[tool.poetry]
+packages = [{include = "agent_test", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
