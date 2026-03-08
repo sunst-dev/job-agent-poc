@@ -1,13 +1,18 @@
 """Base classes and interfaces for agents."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any
 
 
 class Agent(ABC):
     """Abstract interface for agents."""
 
     @abstractmethod
-    def act(self, observation: Any) -> Any:
-        """Produce an action based on the current observation."""
+    def act(
+        self,
+        observation: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> str:
+        """Produce a reply based on the current observation and optional history."""
         raise NotImplementedError

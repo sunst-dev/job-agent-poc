@@ -13,22 +13,24 @@ import uuid as _uuid
 from flask import Flask, Response, jsonify, redirect, render_template, request, session, stream_with_context, url_for
 
 from agent_test.agents.crewai_agent import CrewAIAgent, DEFAULT_MODEL
-from agent_test.agents.resume.agent import (
+from agent_test.agents.fit_analyzer.agent import (
     DEFAULT_MODEL as RESUME_DEFAULT_MODEL,
     ResumeAgent,
 )
+from agent_test.agents.resume_improve.agent import ResumeImproveAgent
 
 _TITLE_MAX = 30        # chars used as auto-title from first user message
 _TITLE_RENAME_MAX = 60  # max chars allowed when manually renaming
 
 _AGENT_TYPES = {
-    "chat":   {"label": "General Chat",    "model": DEFAULT_MODEL},
-    "resume": {"label": "Resume Analyzer", "model": RESUME_DEFAULT_MODEL},
+    "chat":            {"label": "General Chat",        "model": DEFAULT_MODEL},
+    "resume":          {"label": "Resume Analyzer",     "model": RESUME_DEFAULT_MODEL},
+    "resume_improve":  {"label": "Resume Improvement",  "model": RESUME_DEFAULT_MODEL},
 }
 
 # Server-side cache of compiled agents, keyed by session id.
 # Each entry is evicted when its session is deleted or the server restarts.
-_agent_cache: dict[str, CrewAIAgent | ResumeAgent] = {}
+_agent_cache: dict[str, CrewAIAgent | ResumeAgent | ResumeImproveAgent] = {}
 
 # Conversation histories stored server-side to avoid Flask's 4 KB cookie
 # limit — HTML fit reports can be several kilobytes.  Persisted to disk so
@@ -65,6 +67,8 @@ def _get_or_create_agent(sid: str, agent_type: str = "chat") -> CrewAIAgent | Re
     if sid not in _agent_cache:
         if agent_type == "resume":
             _agent_cache[sid] = ResumeAgent()
+        elif agent_type == "resume_improve":
+            _agent_cache[sid] = ResumeImproveAgent()
         else:
             _agent_cache[sid] = CrewAIAgent()
     return _agent_cache[sid]

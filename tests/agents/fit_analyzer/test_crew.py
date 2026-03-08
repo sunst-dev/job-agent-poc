@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 from crewai import Process
 
-from agent_test.agents.resume.crew import run_resume_crew
+from agent_test.agents.fit_analyzer.crew import run_resume_crew
 
 
 _SAMPLE_JD = "Senior Python Engineer 5 years required FastAPI AWS"
@@ -55,9 +55,9 @@ def _run_with_capture(fixed_llm, jd=_SAMPLE_JD, resume=_SAMPLE_RESUME):
         def kickoff(self):
             return "MOCK_REPORT"
 
-    with patch("agent_test.agents.resume.crew.CrewAgent", side_effect=make_agent), \
-         patch("agent_test.agents.resume.crew.Task", side_effect=make_task), \
-         patch("agent_test.agents.resume.crew.Crew", CapturingCrew):
+    with patch("agent_test.agents.fit_analyzer.crew.CrewAgent", side_effect=make_agent), \
+         patch("agent_test.agents.fit_analyzer.crew.Task", side_effect=make_task), \
+         patch("agent_test.agents.fit_analyzer.crew.Crew", CapturingCrew):
         result = run_resume_crew(fixed_llm, jd, resume)
 
     return result, captured

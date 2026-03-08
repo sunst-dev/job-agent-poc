@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-from agent_test.agents.resume.agent import DEFAULT_MODEL, ResumeAgent
-from agent_test.agents.resume.graph import _GREETING
+from agent_test.agents.fit_analyzer.agent import DEFAULT_MODEL, ResumeAgent
+from agent_test.agents.fit_analyzer.graph import _GREETING
 from tests.conftest import JsonLLM
 
 # Simulate a prior assistant turn so the first-turn short-circuit is bypassed
@@ -80,7 +80,7 @@ def test_act_clarification_does_not_call_crew() -> None:
     llm = _llm_that_requests_clarification()
     agent = ResumeAgent(llm=llm)
 
-    with patch("agent_test.agents.resume.graph.run_resume_crew") as mock_crew:
+    with patch("agent_test.agents.fit_analyzer.graph.run_resume_crew") as mock_crew:
         agent.act("partial input")
         mock_crew.assert_not_called()
 
@@ -96,7 +96,7 @@ def test_act_returns_report_when_both_inputs_present() -> None:
     agent = ResumeAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.resume.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
     ):
         result = agent.act("Here is my JD and resume: ...", history=_PRIOR_TURN)
 
@@ -111,7 +111,7 @@ def test_act_passes_jd_and_resume_to_crew() -> None:
     agent = ResumeAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.resume.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
     ) as mock_crew:
         agent.act("JD and resume pasted here", history=_PRIOR_TURN)
 
@@ -126,7 +126,7 @@ def test_act_result_is_string_on_analysis_path() -> None:
     agent = ResumeAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.resume.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
     ):
         result = agent.act("JD + resume")
 

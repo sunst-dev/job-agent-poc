@@ -10,12 +10,12 @@ import json
 
 import pytest
 
-from agent_test.agents.resume.graph import (
+from agent_test.agents.fit_analyzer.graph import (
     _conversation_to_str,
     _extract_json,
     _route_after_input,
 )
-from agent_test.agents.resume.state import ResumeState
+from agent_test.agents.fit_analyzer.state import ResumeState
 
 
 # ---------------------------------------------------------------------------

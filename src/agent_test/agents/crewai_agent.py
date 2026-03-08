@@ -48,7 +48,7 @@ class CrewAIAgent(Agent):
         self._goal = goal
         self._backstory = backstory
 
-    def act(  # type: ignore[override]
+    def act(
         self,
         observation: str,
         history: list[dict[str, str]] | None = None,
@@ -63,12 +63,15 @@ class CrewAIAgent(Agent):
             Optional prior turns as ``{"role": ..., "content": ...}`` dicts.
             Prepended to the task description so the model has full context.
         """
+        _MAX_HISTORY_CHARS = 8_000
         context = ""
         if history:
-            context = "\n".join(
+            raw = "\n".join(
                 f"{m['role'].capitalize()}: {m['content']}" for m in history
             )
-            context = f"Conversation so far:\n{context}\n\n"
+            if len(raw) > _MAX_HISTORY_CHARS:
+                raw = "\u2026" + raw[-_MAX_HISTORY_CHARS:]
+            context = f"Conversation so far:\n{raw}\n\n"
 
         crew_agent = CrewAgent(
             role=self._role,

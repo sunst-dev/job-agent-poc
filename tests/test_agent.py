@@ -19,7 +19,7 @@ def test_crewai_agent_importable() -> None:
 
 
 def test_resume_agent_importable() -> None:
-    from agent_test.agents.resume.agent import ResumeAgent
+    from agent_test.agents.fit_analyzer.agent import ResumeAgent
     assert callable(ResumeAgent)
 
 
@@ -32,7 +32,7 @@ def test_resume_agent_act_is_callable() -> None:
     """ResumeAgent.act() must return a string even with no JD/resume."""
     import json
     from tests.conftest import JsonLLM
-    from agent_test.agents.resume.agent import ResumeAgent
+    from agent_test.agents.fit_analyzer.agent import ResumeAgent
 
     payload = json.dumps({
         "has_jd": False, "has_resume": False,

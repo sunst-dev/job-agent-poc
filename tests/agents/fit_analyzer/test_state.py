@@ -6,7 +6,7 @@ correctly shaped dict passes type validation at runtime.
 
 from __future__ import annotations
 
-from agent_test.agents.resume.state import ResumeState
+from agent_test.agents.fit_analyzer.state import ResumeState
 
 
 _FULL_STATE: ResumeState = {

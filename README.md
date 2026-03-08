@@ -19,10 +19,12 @@ src/agent_test/
         crewai_agent.py          # General chat — single-member CrewAI Crew
         resume/
             __init__.py
-            agent.py             # ResumeAgent facade
-            crew.py              # run_resume_crew() — 4-agent CrewAI pipeline
-            graph.py             # build_resume_graph() — LangGraph outer graph
-            state.py             # ResumeState TypedDict
+            fit_analyzer/
+                __init__.py
+                agent.py             # ResumeAgent facade
+                crew.py              # run_resume_crew() — 4-agent CrewAI pipeline
+                graph.py             # build_resume_graph() — LangGraph outer graph
+                state.py             # ResumeState TypedDict
     templates/
         chat.html                # Single-page chat UI
     utils/
@@ -185,10 +187,10 @@ flowchart TD
 |---|---|
 | `agents/base.py` | `Agent` ABC — defines `act(observation, history)` |
 | `agents/crewai_agent.py` | `CrewAIAgent` — general chat; fresh Crew per turn |
-| `agents/resume/agent.py` | `ResumeAgent` — public facade; wires LangChain + crewai.LLM |
-| `agents/resume/graph.py` | `build_resume_graph(llm, crew_llm)` — LangGraph outer graph |
-| `agents/resume/crew.py` | `run_resume_crew(llm, jd, resume)` — 4-agent CrewAI pipeline |
-| `agents/resume/state.py` | `ResumeState` TypedDict |
+| `agents/fit_analyzer/agent.py` | `ResumeAgent` — public facade; wires LangChain + crewai.LLM |
+| `agents/fit_analyzer/graph.py` | `build_resume_graph(llm, crew_llm)` — LangGraph outer graph |
+| `agents/fit_analyzer/crew.py` | `run_resume_crew(llm, jd, resume)` — 4-agent CrewAI pipeline |
+| `agents/fit_analyzer/state.py` | `ResumeState` TypedDict |
 | `utils/openrouter_client.py` | `get_chat_model()` → `ChatOpenRouter`; `get_crew_llm()` → `crewai.LLM` |
 | `ui.py` | Flask app — per-session agent cache; full history passed to `act()` |
 

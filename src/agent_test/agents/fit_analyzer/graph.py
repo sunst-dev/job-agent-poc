@@ -174,10 +174,15 @@ def _make_input_collector_node(llm: BaseChatModel):
 
         parsed = _extract_json(content)
 
-        clarification_needed: bool = parsed.get("clarification_needed", True)
-        clarification_question: str = parsed.get("clarification_question", _GREETING)
-        job_description: str = parsed.get("job_description", "")
-        resume_text: str = parsed.get("resume_text", "")
+        # Coerce types defensively — some LLMs return strings or null.
+        cn = parsed.get("clarification_needed", True)
+        if isinstance(cn, str):
+            clarification_needed: bool = cn.strip().lower() not in ("false", "0", "no")
+        else:
+            clarification_needed = bool(cn)
+        clarification_question: str = str(parsed.get("clarification_question") or "")
+        job_description: str = str(parsed.get("job_description") or "")
+        resume_text: str = str(parsed.get("resume_text") or "")
 
         # Safety guard: if extraction says both present but texts are empty, ask.
         if not clarification_needed and (not job_description.strip() or not resume_text.strip()):
@@ -186,6 +191,10 @@ def _make_input_collector_node(llm: BaseChatModel):
                 "Please paste the full job description and your resume or "
                 "qualifications summary so I can run the analysis."
             )
+
+        # Ensure clarification_question is non-empty when we need to ask.
+        if clarification_needed and not clarification_question.strip():
+            clarification_question = _GREETING
 
         return {
             "clarification_needed": clarification_needed,

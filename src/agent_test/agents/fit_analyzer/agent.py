@@ -14,7 +14,7 @@ LangGraph (outer graph)
 
 Usage
 ─────
-    from agent_test.agents.resume_agent import ResumeAgent
+    from agent_test.agents import ResumeAgent
 
     agent = ResumeAgent()
     # Turn 1 — no inputs yet
@@ -135,7 +135,7 @@ class ResumeAgent(Agent):
             get_task_callback=lambda: self._task_callback,
         )
 
-    def act(  # type: ignore[override]
+    def act(
         self,
         observation: str,
         history: list[dict[str, str]] | None = None,
