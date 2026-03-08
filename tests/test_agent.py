@@ -18,9 +18,9 @@ def test_crewai_agent_importable() -> None:
     assert callable(CrewAIAgent)
 
 
-def test_resume_agent_importable() -> None:
-    from agent_test.agents.fit_analyzer.agent import ResumeAgent
-    assert callable(ResumeAgent)
+def test_fit_analyzer_agent_importable() -> None:
+    from agent_test.agents.fit_analyzer.agent import FitAnalyzerAgent
+    assert callable(FitAnalyzerAgent)
 
 
 # ---------------------------------------------------------------------------
@@ -28,11 +28,11 @@ def test_resume_agent_importable() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_resume_agent_act_is_callable() -> None:
-    """ResumeAgent.act() must return a string even with no JD/resume."""
+def test_fit_analyzer_agent_act_is_callable() -> None:
+    """FitAnalyzerAgent.act() must return a string even with no JD/resume."""
     import json
     from tests.conftest import JsonLLM
-    from agent_test.agents.fit_analyzer.agent import ResumeAgent
+    from agent_test.agents.fit_analyzer.agent import FitAnalyzerAgent
 
     payload = json.dumps({
         "has_jd": False, "has_resume": False,
@@ -40,7 +40,7 @@ def test_resume_agent_act_is_callable() -> None:
         "clarification_question": "Paste JD and resume please.",
         "job_description": "", "resume_text": "",
     })
-    agent = ResumeAgent(llm=JsonLLM(json_response=payload))
+    agent = FitAnalyzerAgent(llm=JsonLLM(json_response=payload))
     result = agent.act("hi")
     assert isinstance(result, str)
     assert len(result) > 0
@@ -56,11 +56,11 @@ def test_package_level_exports() -> None:
     from agent_test.agents import (
         CrewAIAgent,
         DEFAULT_MODEL,
-        ResumeState,
-        ResumeAgent,
-        build_resume_graph,
-        run_resume_crew,
+        FitAnalyzerState,
+        FitAnalyzerAgent,
+        build_fit_analyzer_graph,
+        run_fit_analyzer_crew,
     )
-    for sym in (CrewAIAgent, DEFAULT_MODEL, ResumeState,
-                ResumeAgent, build_resume_graph, run_resume_crew):
+    for sym in (CrewAIAgent, DEFAULT_MODEL, FitAnalyzerState,
+                FitAnalyzerAgent, build_fit_analyzer_graph, run_fit_analyzer_crew):
         assert sym is not None

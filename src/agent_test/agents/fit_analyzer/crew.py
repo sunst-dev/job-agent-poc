@@ -8,7 +8,7 @@ Four specialist agents run sequentially inside a single Crew:
   3. Scorer           — Step 5 (weighted 0–100 % fit score)
   4. Report Generator — Steps 6–7 (full structured report + action plan)
 
-Call :func:`run_resume_crew` to execute the pipeline and get back
+Call :func:`run_fit_analyzer_crew` to execute the pipeline and get back
 the finished report as a plain string.
 """
 
@@ -178,7 +178,7 @@ _OUTPUT_FORMAT = """<div class="fit-report">
 # ---------------------------------------------------------------------------
 
 
-def run_resume_crew(
+def run_fit_analyzer_crew(
     llm,
     job_description: str,
     resume_text: str,

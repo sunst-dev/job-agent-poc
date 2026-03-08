@@ -10,7 +10,7 @@ Architecture
   present, what is missing, and (if both are available) the extracted texts.
 * ``ask_user``         — Passes the clarification question back to the user
   without running the analysis pipeline.
-* ``crew_node``        — Calls :func:`.resume_crew.run_resume_crew`, which
+* ``crew_node``        — Calls :func:`.crew.run_fit_analyzer_crew`, which
   runs the four-agent CrewAI sequential pipeline and returns the full report.
 """
 
@@ -23,8 +23,8 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, StateGraph
 
-from .crew import run_resume_crew
-from .state import ResumeState
+from .crew import run_fit_analyzer_crew
+from .state import FitAnalyzerState
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +142,7 @@ def _extract_json(text: str) -> dict:
 def _make_input_collector_node(llm: BaseChatModel):
     """Return the ``input_collector`` node function bound to *llm*."""
 
-    def input_collector(state: ResumeState) -> dict:
+    def input_collector(state: FitAnalyzerState) -> dict:
         """Inspect the conversation and extract JD + resume, or ask for more."""
         messages = state["messages"]
 
@@ -209,10 +209,10 @@ def _make_input_collector_node(llm: BaseChatModel):
 def _make_crew_node(crew_llm, get_task_callback=None):
     """Return the ``crew_node`` function that calls the CrewAI pipeline."""
 
-    def crew_node(state: ResumeState) -> dict:
+    def crew_node(state: FitAnalyzerState) -> dict:
         """Run the four-agent CrewAI pipeline and store the report."""
         cb = get_task_callback() if get_task_callback is not None else None
-        report = run_resume_crew(
+        report = run_fit_analyzer_crew(
             llm=crew_llm,
             job_description=state["job_description"],
             resume_text=state["resume_text"],
@@ -226,7 +226,7 @@ def _make_crew_node(crew_llm, get_task_callback=None):
     return crew_node
 
 
-def _ask_user_node(state: ResumeState) -> dict:
+def _ask_user_node(state: FitAnalyzerState) -> dict:
     """Return the clarification question as the response for this turn."""
     return {"response": state["clarification_question"]}
 
@@ -236,7 +236,7 @@ def _ask_user_node(state: ResumeState) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _route_after_input(state: ResumeState) -> str:
+def _route_after_input(state: FitAnalyzerState) -> str:
     """Determine next node after input_collector."""
     if state["clarification_needed"]:
         return "ask_user"
@@ -248,8 +248,8 @@ def _route_after_input(state: ResumeState) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_resume_graph(llm: BaseChatModel, crew_llm=None, get_task_callback=None):
-    """Compile and return the resume fit analyzer LangGraph.
+def build_fit_analyzer_graph(llm: BaseChatModel, crew_llm=None, get_task_callback=None):
+    """Compile and return the fit analyzer LangGraph.
 
     Parameters
     ----------
@@ -262,14 +262,14 @@ def build_resume_graph(llm: BaseChatModel, crew_llm=None, get_task_callback=None
     get_task_callback:
         A zero-argument callable that returns the current per-request
         CrewAI task-completion callback (or ``None``).  Injected by
-        :class:`ResumeAgent` so each live analysis can stream step events.
+        :class:`FitAnalyzerAgent` so each live analysis can stream step events.
 
     Returns
     -------
     CompiledGraph
         A compiled LangGraph ready to be invoked.
     """
-    graph: StateGraph = StateGraph(ResumeState)
+    graph: StateGraph = StateGraph(FitAnalyzerState)
 
     graph.add_node("input_collector", _make_input_collector_node(llm))
     graph.add_node("ask_user", _ask_user_node)

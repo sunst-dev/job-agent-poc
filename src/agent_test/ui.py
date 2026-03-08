@@ -15,7 +15,7 @@ from flask import Flask, Response, jsonify, redirect, render_template, request, 
 from agent_test.agents.crewai_agent import CrewAIAgent, DEFAULT_MODEL
 from agent_test.agents.fit_analyzer.agent import (
     DEFAULT_MODEL as RESUME_DEFAULT_MODEL,
-    ResumeAgent,
+    FitAnalyzerAgent,
 )
 from agent_test.agents.resume_improve.agent import ResumeImproveAgent
 
@@ -30,7 +30,7 @@ _AGENT_TYPES = {
 
 # Server-side cache of compiled agents, keyed by session id.
 # Each entry is evicted when its session is deleted or the server restarts.
-_agent_cache: dict[str, CrewAIAgent | ResumeAgent | ResumeImproveAgent] = {}
+_agent_cache: dict[str, CrewAIAgent | FitAnalyzerAgent | ResumeImproveAgent] = {}
 
 # Conversation histories stored server-side to avoid Flask's 4 KB cookie
 # limit — HTML fit reports can be several kilobytes.  Persisted to disk so
@@ -62,11 +62,11 @@ def _save_history() -> None:
 _history_store: dict[str, list[dict[str, str]]] = _load_history()
 
 
-def _get_or_create_agent(sid: str, agent_type: str = "chat") -> CrewAIAgent | ResumeAgent:
+def _get_or_create_agent(sid: str, agent_type: str = "chat") -> CrewAIAgent | FitAnalyzerAgent:
     """Return the cached agent for *sid*, creating one on first access."""
     if sid not in _agent_cache:
         if agent_type == "resume":
-            _agent_cache[sid] = ResumeAgent()
+            _agent_cache[sid] = FitAnalyzerAgent()
         elif agent_type == "resume_improve":
             _agent_cache[sid] = ResumeImproveAgent()
         else:

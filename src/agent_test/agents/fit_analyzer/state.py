@@ -1,12 +1,12 @@
-"""LangGraph state for the resume fit analyzer pipeline."""
+"""LangGraph state for the fit analyzer pipeline."""
 
 from __future__ import annotations
 
 from typing import TypedDict
 
 
-class ResumeState(TypedDict):
-    """State that flows through the resume fit analyzer graph.
+class FitAnalyzerState(TypedDict):
+    """State that flows through the fit analyzer graph.
 
     messages:
         Full conversation history as ``{"role": ..., "content": ...}`` dicts.

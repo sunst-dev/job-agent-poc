@@ -1,4 +1,4 @@
-"""ResumeAgent: brutally honest job fit analyzer powered by LangGraph + CrewAI.
+"""FitAnalyzerAgent: brutally honest job fit analyzer powered by LangGraph + CrewAI.
 
 Architecture recap
 ──────────────────
@@ -14,9 +14,9 @@ LangGraph (outer graph)
 
 Usage
 ─────
-    from agent_test.agents import ResumeAgent
+    from agent_test.agents import FitAnalyzerAgent
 
-    agent = ResumeAgent()
+    agent = FitAnalyzerAgent()
     # Turn 1 — no inputs yet
     print(agent.act("hi"))
     # → "Please paste the full job description and your resume …"
@@ -38,8 +38,8 @@ from langchain_core.language_models import BaseChatModel
 from agent_test.utils.logger import setup_logger
 from agent_test.utils.openrouter_client import get_chat_model, get_crew_llm
 from ..base import Agent
-from .graph import _GREETING, build_resume_graph
-from .state import ResumeState
+from .graph import _GREETING, build_fit_analyzer_graph
+from .state import FitAnalyzerState
 
 # Use a capable model for multi-step reasoning; can be overridden at init.
 DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
@@ -87,7 +87,7 @@ def _node_detail(node_name: str, node_output: dict) -> str:
     return ""
 
 
-class ResumeAgent(Agent):
+class FitAnalyzerAgent(Agent):
     """Job fit analyzer that combines LangGraph routing with a CrewAI pipeline.
 
     On each call to :meth:`act` the agent:
@@ -129,7 +129,7 @@ class ResumeAgent(Agent):
         self.model = model
         self.temperature = temperature
         self._task_callback = None
-        self._graph = build_resume_graph(
+        self._graph = build_fit_analyzer_graph(
             llm,
             crew_llm=crew_llm,
             get_task_callback=lambda: self._task_callback,
@@ -148,7 +148,7 @@ class ResumeAgent(Agent):
             if event["type"] == "response":
                 response = event["text"]
         if not response:
-            raise RuntimeError("ResumeAgent produced no response.")
+            raise RuntimeError("FitAnalyzerAgent produced no response.")
         return response
 
     def act_stream(
@@ -179,7 +179,7 @@ class ResumeAgent(Agent):
 
         turn_started = time.monotonic()
 
-        initial_state: ResumeState = {
+        initial_state: FitAnalyzerState = {
             "messages": messages,
             "job_description": "",
             "resume_text": "",

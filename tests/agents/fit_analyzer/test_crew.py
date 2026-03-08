@@ -1,4 +1,4 @@
-"""Tests for :func:`run_resume_crew`.
+"""Tests for :func:`run_fit_analyzer_crew`.
 
 CrewAI 0.100+ validates both ``Agent`` (requires a real LLM model string) and
 ``Task`` (requires a real BaseAgent instance) at construction time.  We patch
@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 
 from crewai import Process
 
-from agent_test.agents.fit_analyzer.crew import run_resume_crew
+from agent_test.agents.fit_analyzer.crew import run_fit_analyzer_crew
 
 
 _SAMPLE_JD = "Senior Python Engineer 5 years required FastAPI AWS"
@@ -31,7 +31,7 @@ _SAMPLE_RESUME = "John Doe 6 years Python Django Flask no AWS"
 # ---------------------------------------------------------------------------
 
 def _run_with_capture(fixed_llm, jd=_SAMPLE_JD, resume=_SAMPLE_RESUME):
-    """Run run_resume_crew with CrewAgent, Task, and Crew fully mocked."""
+    """Run run_fit_analyzer_crew with CrewAgent, Task, and Crew fully mocked."""
     captured = {}
     agent_idx = [0]
     task_idx = [0]
@@ -58,7 +58,7 @@ def _run_with_capture(fixed_llm, jd=_SAMPLE_JD, resume=_SAMPLE_RESUME):
     with patch("agent_test.agents.fit_analyzer.crew.CrewAgent", side_effect=make_agent), \
          patch("agent_test.agents.fit_analyzer.crew.Task", side_effect=make_task), \
          patch("agent_test.agents.fit_analyzer.crew.Crew", CapturingCrew):
-        result = run_resume_crew(fixed_llm, jd, resume)
+        result = run_fit_analyzer_crew(fixed_llm, jd, resume)
 
     return result, captured
 

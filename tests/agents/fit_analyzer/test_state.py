@@ -1,4 +1,4 @@
-"""Tests for :class:`ResumeState`.
+"""Tests for :class:`FitAnalyzerState`.
 
 Verifies that the TypedDict schema has all required keys and that a
 correctly shaped dict passes type validation at runtime.
@@ -6,10 +6,10 @@ correctly shaped dict passes type validation at runtime.
 
 from __future__ import annotations
 
-from agent_test.agents.fit_analyzer.state import ResumeState
+from agent_test.agents.fit_analyzer.state import FitAnalyzerState
 
 
-_FULL_STATE: ResumeState = {
+_FULL_STATE: FitAnalyzerState = {
     "messages": [{"role": "user", "content": "hi"}],
     "job_description": "Senior SWE at Acme",
     "resume_text": "5 years Python experience",
@@ -31,8 +31,8 @@ _REQUIRED_KEYS = {
 
 
 def test_all_required_keys_present() -> None:
-    """ResumeState must declare all seven required fields."""
-    assert _REQUIRED_KEYS == set(ResumeState.__annotations__.keys())
+    """FitAnalyzerState must declare all seven required fields."""
+    assert _REQUIRED_KEYS == set(FitAnalyzerState.__annotations__.keys())
 
 
 def test_messages_is_list() -> None:
@@ -51,7 +51,7 @@ def test_string_fields_are_str() -> None:
 
 def test_empty_strings_are_valid_defaults() -> None:
     """Fields may be empty strings — that signals 'not yet populated'."""
-    state: ResumeState = {
+    state: FitAnalyzerState = {
         "messages": [],
         "job_description": "",
         "resume_text": "",

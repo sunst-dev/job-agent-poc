@@ -1,4 +1,4 @@
-"""Tests for :class:`ResumeAgent`.
+"""Tests for :class:`FitAnalyzerAgent`.
 
 Verifies end-to-end behaviour through ``act()`` using injected stubs.
 The CrewAI crew is monkeypatched so tests remain fast and offline.
@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 import pytest
 
-from agent_test.agents.fit_analyzer.agent import DEFAULT_MODEL, ResumeAgent
+from agent_test.agents.fit_analyzer.agent import DEFAULT_MODEL, FitAnalyzerAgent
 from agent_test.agents.fit_analyzer.graph import _GREETING
 from tests.conftest import JsonLLM
 
@@ -61,7 +61,7 @@ _MOCK_REPORT = "🎯 JOB FIT ANALYSIS\nOVERALL FIT SCORE: 82%"
 
 def test_act_returns_clarification_when_no_inputs() -> None:
     """On the very first turn the agent always returns the welcome greeting."""
-    agent = ResumeAgent(llm=_llm_that_requests_clarification())  # LLM not called
+    agent = FitAnalyzerAgent(llm=_llm_that_requests_clarification())  # LLM not called
     result = agent.act("hi")
     assert result == _GREETING
 
@@ -70,7 +70,7 @@ def test_act_returns_clarification_when_missing_resume() -> None:
     """When JD is present but resume is missing, the LLM returns a clarification."""
     question = "Please also paste your resume or qualifications summary."
     llm = _llm_that_requests_clarification(question)
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
     result = agent.act("Here is the job description: <JD text>", history=_PRIOR_TURN)
     assert result == question
 
@@ -78,9 +78,9 @@ def test_act_returns_clarification_when_missing_resume() -> None:
 def test_act_clarification_does_not_call_crew() -> None:
     """The CrewAI pipeline must NOT run when clarification is needed."""
     llm = _llm_that_requests_clarification()
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
 
-    with patch("agent_test.agents.fit_analyzer.graph.run_resume_crew") as mock_crew:
+    with patch("agent_test.agents.fit_analyzer.graph.run_fit_analyzer_crew") as mock_crew:
         agent.act("partial input")
         mock_crew.assert_not_called()
 
@@ -93,10 +93,10 @@ def test_act_clarification_does_not_call_crew() -> None:
 def test_act_returns_report_when_both_inputs_present() -> None:
     """When JD and resume are both extracted, the crew report is returned."""
     llm = _llm_that_has_both_inputs()
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_fit_analyzer_crew", return_value=_MOCK_REPORT
     ):
         result = agent.act("Here is my JD and resume: ...", history=_PRIOR_TURN)
 
@@ -104,14 +104,14 @@ def test_act_returns_report_when_both_inputs_present() -> None:
 
 
 def test_act_passes_jd_and_resume_to_crew() -> None:
-    """The extracted JD and resume texts are forwarded to run_resume_crew."""
+    """The extracted JD and resume texts are forwarded to run_fit_analyzer_crew."""
     jd = "Senior ML Engineer — PyTorch required"
     resume = "Alice | ML Engineer | TensorFlow, Keras"
     llm = _llm_that_has_both_inputs(jd=jd, resume=resume)
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_fit_analyzer_crew", return_value=_MOCK_REPORT
     ) as mock_crew:
         agent.act("JD and resume pasted here", history=_PRIOR_TURN)
 
@@ -123,10 +123,10 @@ def test_act_passes_jd_and_resume_to_crew() -> None:
 def test_act_result_is_string_on_analysis_path() -> None:
     """act() must always return a plain string, even on the analysis path."""
     llm = _llm_that_has_both_inputs()
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
 
     with patch(
-        "agent_test.agents.fit_analyzer.graph.run_resume_crew", return_value=_MOCK_REPORT
+        "agent_test.agents.fit_analyzer.graph.run_fit_analyzer_crew", return_value=_MOCK_REPORT
     ):
         result = agent.act("JD + resume")
 
@@ -141,7 +141,7 @@ def test_act_result_is_string_on_analysis_path() -> None:
 def test_act_history_is_threaded_through() -> None:
     """History passed to act() is included in the conversation state."""
     llm = _llm_that_requests_clarification("Paste JD please.")
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
     history = [
         {"role": "user", "content": "previous turn"},
         {"role": "assistant", "content": "clarification reply"},
@@ -154,7 +154,7 @@ def test_act_history_is_threaded_through() -> None:
 def test_act_none_history_is_safe() -> None:
     """Passing history=None must not raise."""
     llm = _llm_that_requests_clarification()
-    agent = ResumeAgent(llm=llm)
+    agent = FitAnalyzerAgent(llm=llm)
     result = agent.act("hello", history=None)
     assert isinstance(result, str)
 
@@ -167,7 +167,7 @@ def test_act_none_history_is_safe() -> None:
 def test_model_attribute_stored() -> None:
     """The model name is accessible on the agent instance."""
     llm = _llm_that_requests_clarification()
-    agent = ResumeAgent(llm=llm, model="my/model")
+    agent = FitAnalyzerAgent(llm=llm, model="my/model")
     assert agent.model == "my/model"
 
 
@@ -177,7 +177,7 @@ def test_default_model_is_non_empty_string() -> None:
 
 def test_temperature_attribute_stored() -> None:
     llm = _llm_that_requests_clarification()
-    agent = ResumeAgent(llm=llm, temperature=0.3)
+    agent = FitAnalyzerAgent(llm=llm, temperature=0.3)
     assert agent.temperature == 0.3
 
 
@@ -187,10 +187,10 @@ def test_temperature_attribute_stored() -> None:
 
 
 def test_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Instantiating ResumeAgent without API key (and no injected llm) raises."""
+    """Instantiating FitAnalyzerAgent without API key (and no injected llm) raises."""
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.setattr(
         "agent_test.utils.openrouter_client.load_dotenv", lambda *_: False
     )
     with pytest.raises(RuntimeError, match="OPENROUTER_API_KEY"):
-        ResumeAgent()
+        FitAnalyzerAgent()

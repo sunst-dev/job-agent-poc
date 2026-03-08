@@ -15,7 +15,7 @@ from agent_test.agents.fit_analyzer.graph import (
     _extract_json,
     _route_after_input,
 )
-from agent_test.agents.fit_analyzer.state import ResumeState
+from agent_test.agents.fit_analyzer.state import FitAnalyzerState
 
 
 # ---------------------------------------------------------------------------
@@ -130,8 +130,8 @@ def test_conversation_to_str_empty_list() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _state_with(clarification_needed: bool) -> ResumeState:
-    return ResumeState(
+def _state_with(clarification_needed: bool) -> FitAnalyzerState:
+    return FitAnalyzerState(
         messages=[],
         job_description="jd" if not clarification_needed else "",
         resume_text="cv" if not clarification_needed else "",
