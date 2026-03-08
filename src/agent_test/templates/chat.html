@@ -633,6 +633,165 @@
       color: #fff;
       box-shadow: 0 0 10px rgba(16,163,127,.35);
     }
+
+    /* ── Improve Report ───────────────────────────────────── */
+    .bubble:has(.improve-report) {
+      white-space: normal;
+      padding: 6px 4px;
+      background: transparent;
+      border: none;
+      max-width: 92%;
+    }
+
+    .improve-report {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      width: 100%;
+    }
+
+    .improve-header {
+      background: linear-gradient(135deg, #16202e 0%, #1b2535 100%);
+      border: 1px solid #4a9eff55;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .improve-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      border-bottom: 1px solid rgba(74,158,255,.2);
+      padding-bottom: 12px;
+    }
+
+    .improve-title-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: #7dd3fc;
+      letter-spacing: .04em;
+    }
+
+    .improve-meta {
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .improve-score-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .improve-score-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .improve-score-label {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .improve-score-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .improve-score-value.excellent { color: #4ade80; }
+    .improve-score-value.good      { color: var(--accent); }
+    .improve-score-value.marginal  { color: #fbbf24; }
+    .improve-score-value.poor      { color: #f87171; }
+
+    .improve-score-arrow {
+      font-size: 22px;
+      color: var(--text-dim);
+      align-self: flex-end;
+      padding-bottom: 4px;
+    }
+
+    .improve-low-score-warning {
+      background: #2b1e16;
+      border: 1px solid #f87171;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #f87171;
+      font-size: 12.5px;
+    }
+
+    .improve-section {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .improve-section-hdr {
+      padding: 9px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      border-bottom: 1px solid var(--border);
+    }
+    .improve-audit-hdr     { background: #161e2b; color: #7dd3fc; border-bottom-color: #1e2b3d; }
+    .improve-resume-hdr    { background: #162b1e; color: #4ade80; border-bottom-color: #1e3d28; }
+    .improve-changelog-hdr { background: #1e1e30; color: #a5b4fc; border-bottom-color: #2a2a42; }
+    .improve-ats-hdr       { background: #1a1a2e; color: #c084fc; border-bottom-color: #2a1f42; }
+    .improve-gaps-hdr      { background: #2b2516; color: #fbbf24; border-bottom-color: #3d3420; }
+    .improve-upskill-hdr   { background: #162420; color: var(--accent); border-bottom-color: #1e3530; }
+
+    .improve-body {
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 13px;
+      background: var(--ai-bg);
+    }
+    .improve-body p              { margin: 0 0 7px; }
+    .improve-body p:last-child   { margin-bottom: 0; }
+    .improve-body ul, .improve-body ol { margin: 4px 0 8px 20px; padding: 0; }
+    .improve-body li             { margin-bottom: 5px; }
+    .improve-body strong         { color: var(--text); }
+
+    .improve-resume-text {
+      white-space: pre-wrap;
+      font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text);
+      margin: 0;
+      background: transparent;
+      border: none;
+      overflow-x: auto;
+    }
+
+    .improve-keyword-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 6px 0 10px;
+    }
+
+    .improve-keyword {
+      background: #1a1a2e;
+      border: 1px solid #4a2a6e;
+      color: #c084fc;
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11.5px;
+      font-family: ui-monospace, monospace;
+    }
+
+    .improve-match-level { color: var(--text-dim); margin-top: 4px; }
   </style>
   <script src="https://unpkg.com/dompurify@3/dist/purify.min.js"></script>
 </head>
@@ -737,7 +896,7 @@
       <div class="avatar {{ msg.role }}">
         {{ 'You' if msg.role == 'user' else 'AI' }}
       </div>
-      {% if msg.role == 'assistant' and msg.content.startswith('<div class="fit-report">') %}
+      {% if msg.role == 'assistant' and (msg.content.startswith('<div class="fit-report">') or msg.content.startswith('<div class="improve-report">')) %}
       <div class="bubble" data-fit-report="{{ msg.content | e }}"></div>
       {% else %}
       <div class="bubble">{{ msg.content | e }}</div>
@@ -772,6 +931,31 @@
   const btn  = document.getElementById('sendBtn');
   const msgs = document.getElementById('messages');
 
+  // Current agent type — used to select the correct pipeline step labels.
+  const agentType = {{ agent_type | tojson }};
+
+  const _PIPELINE_STEPS_FIT = [
+    { key: 'input_collector',  icon: '🔍', label: 'Analyzing input' },
+    { key: 'crew_node',        icon: '⚙️',  label: 'Running pipeline' },
+    { key: 'jd_parser',       icon: '📋', label: 'Parsing job description' },
+    { key: 'resume_analyzer', icon: '📄', label: 'Analyzing resume' },
+    { key: 'scorer',          icon: '📊', label: 'Scoring fit' },
+    { key: 'reporter',        icon: '📝', label: 'Generating report' },
+  ];
+
+  const _PIPELINE_STEPS_IMPROVE = [
+    { key: 'input_collector', icon: '🔍', label: 'Analyzing input' },
+    { key: 'crew_node',       icon: '⚙️',  label: 'Running pipeline' },
+    { key: 'strategist',      icon: '🎯', label: 'Extracting enhancement targets' },
+    { key: 'auditor',         icon: '🔍', label: 'Auditing current resume' },
+    { key: 'rewriter',        icon: '✍️',  label: 'Rewriting and enhancing' },
+    { key: 'reporter',        icon: '📋', label: 'Generating report' },
+  ];
+
+  const _PIPELINE_STEPS = (agentType === 'resume_improve')
+    ? _PIPELINE_STEPS_IMPROVE
+    : _PIPELINE_STEPS_FIT;
+
   // ── Helpers ────────────────────────────────────────────────
 
   function escapeHtml(text) {
@@ -794,7 +978,10 @@
   function isFitReport(content) {
     if (typeof content !== 'string') return false;
     const t = content.trimStart();
-    return t.startsWith('<div class="fit-report">') || /^```[a-zA-Z]*\s*<div class="fit-report">/.test(t);
+    return t.startsWith('<div class="fit-report">') ||
+           t.startsWith('<div class="improve-report">') ||
+           /^```[a-zA-Z]*\s*<div class="fit-report">/.test(t) ||
+           /^```[a-zA-Z]*\s*<div class="improve-report">/.test(t);
   }
 
   function stripFences(content) {

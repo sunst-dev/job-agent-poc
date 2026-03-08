@@ -60,7 +60,13 @@ def test_package_level_exports() -> None:
         FitAnalyzerAgent,
         build_fit_analyzer_graph,
         run_fit_analyzer_crew,
+        ResumeImproveState,
+        ResumeImproveAgent,
+        build_resume_improve_graph,
+        run_resume_improve_crew,
     )
     for sym in (CrewAIAgent, DEFAULT_MODEL, FitAnalyzerState,
-                FitAnalyzerAgent, build_fit_analyzer_graph, run_fit_analyzer_crew):
+                FitAnalyzerAgent, build_fit_analyzer_graph, run_fit_analyzer_crew,
+                ResumeImproveState, ResumeImproveAgent,
+                build_resume_improve_graph, run_resume_improve_crew):
         assert sym is not None

@@ -2,10 +2,11 @@
 
 A minimal template for building AI agents with [LangGraph](https://github.com/langchain-ai/langgraph) and [CrewAI](https://github.com/crewAIInc/crewAI), backed by [OpenRouter](https://openrouter.ai/).
 
-Two agents ship out of the box:
+Three agents ship out of the box:
 
 - **General Chat** (`CrewAIAgent`) — single-task CrewAI Crew; general-purpose assistant.
-- **Resume Analyzer** (`ResumeAgent`) — brutally honest job-fit analyzer; LangGraph outer graph with a 4-agent CrewAI pipeline inside.
+- **Fit Analyzer** (`FitAnalyzerAgent`) — brutally honest job-fit analyzer; LangGraph outer graph with a 4-agent CrewAI pipeline inside.
+- **Resume Improver** (`ResumeImproveAgent`) — targeted ATS-optimized resume rewriter; LangGraph outer graph with a 4-agent CrewAI pipeline that rewrites and scores the improved resume.
 
 ## Project layout
 
@@ -17,14 +18,18 @@ src/agent_test/
         __init__.py
         base.py                  # Abstract Agent interface
         crewai_agent.py          # General chat — single-member CrewAI Crew
-        resume/
+        fit_analyzer/
             __init__.py
-            fit_analyzer/
-                __init__.py
-                agent.py             # ResumeAgent facade
-                crew.py              # run_resume_crew() — 4-agent CrewAI pipeline
-                graph.py             # build_resume_graph() — LangGraph outer graph
-                state.py             # ResumeState TypedDict
+            agent.py             # FitAnalyzerAgent facade
+            crew.py              # run_fit_analyzer_crew() — 4-agent CrewAI pipeline
+            graph.py             # build_fit_analyzer_graph() — LangGraph outer graph
+            state.py             # FitAnalyzerState TypedDict
+        resume_improve/
+            __init__.py
+            agent.py             # ResumeImproveAgent facade
+            crew.py              # run_resume_improve_crew() — 4-agent CrewAI pipeline
+            graph.py             # build_resume_improve_graph() — LangGraph outer graph
+            state.py             # ResumeImproveState TypedDict
     templates/
         chat.html                # Single-page chat UI
     utils/
@@ -38,11 +43,14 @@ tests/
     test_agent.py                # Cross-agent smoke tests
     test_ui.py                   # Flask UI tests
     agents/
-        resume/
+        fit_analyzer/
             test_agent.py
             test_crew.py
             test_input_parsing.py
             test_state.py
+        resume_improve/
+            test_agent.py
+            test_crew.py
 ```
 
 ## Getting started
@@ -81,7 +89,7 @@ User message
                     └── CrewAgent (role/goal/backstory) ── crewai.LLM (OpenRouter via LiteLLM)
 ```
 
-### Resume Analyzer (`ResumeAgent`)
+### Fit Analyzer (`FitAnalyzerAgent`)
 
 A two-layer pipeline: LangGraph routes the conversation; CrewAI does the heavy reasoning.
 
@@ -89,7 +97,7 @@ A two-layer pipeline: LangGraph routes the conversation; CrewAI does the heavy r
 flowchart TD
     User(["👤 User"])
     Flask(["🌐 Flask  /chat/stream"])
-    Agent(["ResumeAgent.act_stream"])
+    Agent(["FitAnalyzerAgent.act_stream"])
 
     subgraph LangGraph["  LangGraph — Outer Graph  "]
         direction TB
@@ -179,7 +187,75 @@ flowchart TD
     class User,Flask,Agent entry
 ```
 
-**LLM split:** LangGraph nodes use `ChatOpenRouter` (LangChain `BaseChatModel`); CrewAI agents use `crewai.LLM` (LiteLLM-backed). CrewAI 0.100+ no longer accepts a LangChain model directly.
+### Resume Improver (`ResumeImproveAgent`)
+
+Same two-layer pattern as `FitAnalyzerAgent`. Takes a resume, a Job Fit Analysis report, and the original JD, then rewrites the resume to maximize ATS alignment.
+
+```mermaid
+flowchart TD
+    User2(["👤 User"])
+    Flask2(["🌐 Flask  /chat/stream"])
+    Agent2(["ResumeImproveAgent.act_stream"])
+
+    subgraph LangGraph2["  LangGraph — Outer Graph  "]
+        direction TB
+        IC2["🔍 input_collector
+        Validates: resume + fit analysis + JD present"]
+
+        AU2["💬 ask_user
+        Returns clarification question"]
+
+        CN2["⚙️ crew_node
+        Delegates to CrewAI pipeline"]
+    end
+
+    subgraph CrewAI2["  CrewAI — Sequential Pipeline  "]
+        direction TB
+        R1["🎯 Enhancement Strategist
+        Extracts fit score · recommendation directive
+        Addressable gaps · missing ATS keywords"]
+
+        R2["🔍 Resume Auditor
+        Structure · summary · bullets
+        Skills section · red flags"]
+
+        R3["✍️ Resume Rewriter
+        ATS keyword injection · summary rewrite
+        Bullet enhancement · integrity guardrail"]
+
+        R4["📋 Report Generator
+        Full HTML enhancement report
+        Change log · projected score uplift"]
+    end
+
+    SSE2{{"📡 SSE event queue"}}
+
+    User2 --> Flask2 --> Agent2 --> LangGraph2
+
+    IC2 -- "clarification needed" --> AU2 --> SSE2
+    IC2 -- "all inputs present" --> CN2 --> CrewAI2
+
+    R1 --> R2 --> R3 --> R4
+    R1 & R2 & R3 & R4 -- "task callback" --> SSE2
+
+    classDef node_r   fill:#1a2822,stroke:#10a37f,color:#ececec
+    classDef crew_r1  fill:#162b1e,stroke:#4ade80,color:#ececec
+    classDef crew_r2  fill:#1e2b3d,stroke:#7dd3fc,color:#ececec
+    classDef crew_r3  fill:#2b2516,stroke:#fbbf24,color:#ececec
+    classDef crew_r4  fill:#221630,stroke:#c084fc,color:#ececec
+    classDef sse_r    fill:#2b1616,stroke:#f87171,color:#ececec
+    classDef entry_r  fill:#0f0f0f,stroke:#8e8ea0,color:#ececec
+
+    class IC2,AU2,CN2 node_r
+    class R1 crew_r1
+    class R2 crew_r2
+    class R3 crew_r3
+    class R4 crew_r4
+    class SSE2 sse_r
+    class User2,Flask2,Agent2 entry_r
+```
+
+**LLM split (both agents):** LangGraph nodes use `ChatOpenRouter` (LangChain `BaseChatModel`); CrewAI agents use `crewai.LLM` (LiteLLM-backed). CrewAI 0.100+ no longer accepts a LangChain model directly.
 
 ### Key modules
 
@@ -187,17 +263,21 @@ flowchart TD
 |---|---|
 | `agents/base.py` | `Agent` ABC — defines `act(observation, history)` |
 | `agents/crewai_agent.py` | `CrewAIAgent` — general chat; fresh Crew per turn |
-| `agents/fit_analyzer/agent.py` | `ResumeAgent` — public facade; wires LangChain + crewai.LLM |
-| `agents/fit_analyzer/graph.py` | `build_resume_graph(llm, crew_llm)` — LangGraph outer graph |
-| `agents/fit_analyzer/crew.py` | `run_resume_crew(llm, jd, resume)` — 4-agent CrewAI pipeline |
-| `agents/fit_analyzer/state.py` | `ResumeState` TypedDict |
+| `agents/fit_analyzer/agent.py` | `FitAnalyzerAgent` — public facade; wires LangChain + crewai.LLM |
+| `agents/fit_analyzer/graph.py` | `build_fit_analyzer_graph(llm, crew_llm)` — LangGraph outer graph |
+| `agents/fit_analyzer/crew.py` | `run_fit_analyzer_crew(llm, jd, resume)` — 4-agent CrewAI pipeline |
+| `agents/fit_analyzer/state.py` | `FitAnalyzerState` TypedDict |
+| `agents/resume_improve/agent.py` | `ResumeImproveAgent` — public facade; same pattern as FitAnalyzerAgent |
+| `agents/resume_improve/graph.py` | `build_resume_improve_graph(llm, crew_llm)` — LangGraph outer graph |
+| `agents/resume_improve/crew.py` | `run_resume_improve_crew(llm, resume, fit_analysis, jd)` — 4-agent CrewAI pipeline |
+| `agents/resume_improve/state.py` | `ResumeImproveState` TypedDict |
 | `utils/openrouter_client.py` | `get_chat_model()` → `ChatOpenRouter`; `get_crew_llm()` → `crewai.LLM` |
 | `ui.py` | Flask app — per-session agent cache; full history passed to `act()` |
 
 ## Using the agents in code
 
 ```python
-from agent_test.agents import CrewAIAgent, ResumeAgent
+from agent_test.agents import CrewAIAgent, FitAnalyzerAgent, ResumeImproveAgent
 
 # General chat
 agent = CrewAIAgent()
@@ -212,14 +292,24 @@ reply = agent.act("What is CrewAI?", history=history)
 ```
 
 ```python
-# Resume analyzer — turn 1 (no inputs yet)
-agent = ResumeAgent()
+# Fit Analyzer — turn 1 (no inputs yet)
+agent = FitAnalyzerAgent()
 print(agent.act("hi"))
 # → "Please paste the full job description and your resume …"
 
 # Turn 2 — paste JD + resume
 reply = agent.act(jd_and_resume_text, history=history)
 # → Full structured 🎯 JOB FIT ANALYSIS report
+```
+
+```python
+# Resume Improver — paste resume, fit analysis, and JD together
+agent = ResumeImproveAgent()
+print(agent.act("hi"))
+# → "Please provide: 1. Your current resume  2. Your Job Fit Analysis output  3. The original JD"
+
+reply = agent.act(resume_and_fit_analysis_and_jd, history=history)
+# → Full structured 📋 RESUME ENHANCEMENT REPORT
 ```
 
 ### Customising the chat agent
@@ -247,10 +337,11 @@ poetry run pytest -v
 
 ## Web UI
 
-The Flask app at `ui.py` provides a chat interface with two session types selectable from the sidebar:
+The Flask app at `ui.py` provides a chat interface with three session types selectable from the sidebar:
 
 - **New chat** — creates a `CrewAIAgent` session
-- **Resume Analyzer** — creates a `ResumeAgent` session
+- **Fit Analyzer** — creates a `FitAnalyzerAgent` session
+- **Resume Improver** — creates a `ResumeImproveAgent` session
 
 **Session management:**
 - Multiple named sessions live in the sidebar; sessions can be renamed or deleted.
@@ -266,7 +357,7 @@ The Flask app at `ui.py` provides a chat interface with two session types select
 ## Extending
 
 - **Add a new agent**: subclass `Agent` in `base.py`, implement `act(observation, history)`, register in `agents/__init__.py` and add a button in `chat.html`.
-- **Add graph nodes**: extend `resume/graph.py` with additional nodes and wire them in `build_resume_graph()`.
-- **Add state fields**: update `ResumeState` in `resume/state.py`.
+- **Add graph nodes**: extend `fit_analyzer/graph.py` or `resume_improve/graph.py` with additional nodes.
+- **Add state fields**: update `FitAnalyzerState` in `fit_analyzer/state.py` or `ResumeImproveState` in `resume_improve/state.py`.
 
 > Never commit `local_test.env` or `conversation_history.json` — both are already listed in `.gitignore`.
