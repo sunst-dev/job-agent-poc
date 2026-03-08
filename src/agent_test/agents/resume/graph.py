@@ -80,12 +80,23 @@ Decisions:
 # ---------------------------------------------------------------------------
 
 
+_MAX_ASSISTANT_CHARS = 400  # cap assistant msgs to avoid re-sending large HTML reports
+
+
 def _conversation_to_str(messages: list[dict[str, str]]) -> str:
-    """Format message history as a readable string for the LLM."""
+    """Format message history as a readable string for the LLM.
+
+    Assistant messages longer than ``_MAX_ASSISTANT_CHARS`` are truncated so
+    that large HTML fit-reports from previous turns don't bloat the context
+    sent to the input_collector on every subsequent turn.
+    """
     lines = []
     for m in messages:
         role = m["role"].capitalize()
-        lines.append(f"{role}: {m['content']}")
+        content = m["content"]
+        if m["role"] == "assistant" and len(content) > _MAX_ASSISTANT_CHARS:
+            content = content[:_MAX_ASSISTANT_CHARS] + "… [truncated]"
+        lines.append(f"{role}: {content}")
     return "\n\n".join(lines)
 
 

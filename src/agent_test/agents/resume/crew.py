@@ -30,11 +30,9 @@ _JD_PARSER_GOAL = (
     "keywords, implicit expectations, and culture/environment signals."
 )
 _JD_PARSER_BACKSTORY = (
-    "You are an expert technical recruiter with 15+ years dissecting job postings "
-    "for software engineering and AI engineering roles at companies ranging from "
-    "Series-A startups to FAANG. You have an uncanny ability to separate what "
-    "employers actually need from boilerplate filler, and you know exactly which "
-    "keywords ATS systems flag."
+    "Expert technical recruiter with 15+ years parsing software and AI engineering "
+    "job postings at startups and FAANG. You separate genuine requirements from "
+    "boilerplate and know exactly which keywords ATS systems flag."
 )
 
 _RESUME_ANALYZER_ROLE = "Resume & Candidate Analyzer"
@@ -46,10 +44,9 @@ _RESUME_ANALYZER_GOAL = (
     "overqualification, or title inflation."
 )
 _RESUME_ANALYZER_BACKSTORY = (
-    "You are a senior technical interviewer and hiring manager who has reviewed "
-    "thousands of engineering resumes. You never give candidates the benefit of "
-    "the doubt — if a skill or experience is not explicitly stated, you treat it "
-    "as a gap. You are direct, evidence-based, and immune to vague buzzwords."
+    "Senior technical interviewer and hiring manager who reviewed thousands of "
+    "engineering resumes. Unstated skills are gaps — no assumptions. Direct, "
+    "evidence-based, immune to buzzwords."
 )
 
 _SCORER_ROLE = "Fit Scorer"
@@ -62,10 +59,9 @@ _SCORER_GOAL = (
     "2–3 sentence rationale tied to each rubric component."
 )
 _SCORER_BACKSTORY = (
-    "You are a data-driven hiring analyst who quantifies candidate-role fit with "
-    "surgical precision. You have built and refined scoring rubrics used by "
-    "engineering teams at top tech companies. You never inflate scores to spare "
-    "feelings — accuracy is everything."
+    "Data-driven hiring analyst who quantifies candidate-role fit with precision. "
+    "Built scoring rubrics used by top-tier engineering teams. Never inflates "
+    "scores — accuracy first."
 )
 
 _REPORTER_ROLE = "Career Report Generator"
@@ -78,11 +74,9 @@ _REPORTER_GOAL = (
     "either the JD or the resume."
 )
 _REPORTER_BACKSTORY = (
-    "You are a brutally honest career coach specialising in SWE and AI engineering "
-    "placements. Your reputation is built on giving candidates the unvarnished "
-    "truth that most coaches are too polite to deliver — always professional, "
-    "always constructive, always grounded in evidence. Candidates who follow your "
-    "advice consistently land better roles faster."
+    "Brutally honest career coach specializing in SWE and AI engineering placements. "
+    "You deliver the unvarnished truth most coaches avoid — professional, "
+    "constructive, and grounded in evidence."
 )
 
 # ---------------------------------------------------------------------------
@@ -297,7 +291,6 @@ def run_resume_crew(
             "and a clearly itemised red flag section."
         ),
         agent=resume_analyzer,
-        context=[parse_task],
         callback=_shim,
     )
 
@@ -324,7 +317,7 @@ def run_resume_crew(
             "2–3 sentence rationale."
         ),
         agent=scorer,
-        context=[parse_task, analyze_task],
+        context=[parse_task],
         callback=_shim,
     )
 
@@ -352,7 +345,7 @@ def run_resume_crew(
             "No markdown, no extra text outside the HTML block."
         ),
         agent=reporter,
-        context=[parse_task, analyze_task, score_task],
+        context=[parse_task, analyze_task],
         callback=_shim,
     )
 
