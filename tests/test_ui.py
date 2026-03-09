@@ -30,7 +30,9 @@ def test_index_get() -> None:
     assert b"Agent Chat" in resp.data
     assert b"Suggested Starters" in resp.data
     assert b"Workflow Shortcut" in resp.data
+    assert b"Live Activity" in resp.data
     assert b".hidden { display: none !important; }" in resp.data
+    assert b"background: rgba(6, 12, 16, 0.88);" not in resp.data
     assert b'<div class="msg-row' not in resp.data
 
 
