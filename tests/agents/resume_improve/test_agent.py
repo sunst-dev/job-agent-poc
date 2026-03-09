@@ -62,11 +62,25 @@ def _llm_that_has_all_inputs(
 # ---------------------------------------------------------------------------
 
 
-def test_act_returns_greeting_on_first_turn() -> None:
-    """On the very first turn the agent returns the welcome greeting."""
+def test_act_returns_greeting_on_simple_first_turn() -> None:
+    """A simple greeting still gets the lightweight welcome response."""
     agent = ResumeImproveAgent(llm=_llm_that_requests_clarification())
     result = agent.act("hi")
     assert result == _GREETING
+
+
+def test_act_processes_substantive_first_turn() -> None:
+    """A first-turn resume-improve payload should run immediately."""
+    llm = _llm_that_has_all_inputs()
+    agent = ResumeImproveAgent(llm=llm)
+
+    with patch(
+        "agent_test.agents.resume_improve.graph.run_resume_improve_crew",
+        return_value=_MOCK_REPORT,
+    ):
+        result = agent.act("Here is my resume, fit analysis, and job description.")
+
+    assert result == _MOCK_REPORT
 
 
 def test_act_returns_clarification_when_missing_resume() -> None:

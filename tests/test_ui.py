@@ -28,6 +28,9 @@ def test_index_get() -> None:
     resp = client.get("/")
     assert resp.status_code == 200
     assert b"Agent Chat" in resp.data
+    assert b"Suggested Starters" in resp.data
+    assert b"Workflow Shortcut" in resp.data
+    assert b".hidden { display: none !important; }" in resp.data
     assert b'<div class="msg-row' not in resp.data
 
 
@@ -84,6 +87,55 @@ def test_pipeline_page_get() -> None:
     assert resp.status_code == 200
     assert b"Guided Resume Workflow" in resp.data
     assert b"Editable Improved Resume" in resp.data
+    assert b"Chat Handoff" in resp.data
+
+
+def test_pipeline_page_bootstraps_existing_server_state() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    with client.session_transaction() as flask_session:
+        flask_session["pipeline_id"] = "pipeline-restore"
+
+    ui_module._pipeline_sessions["pipeline-restore"] = {
+        "resume_text": "restored resume",
+        "job_description": "restored jd",
+        "fit_report": '<div class="fit-report">Fit</div>',
+        "improvement_report": '<div class="improve-report">Improve</div>',
+        "improved_resume": "restored improved resume",
+        "reanalyzed_fit_report": '<div class="fit-report">Final</div>',
+        "consent": "Approved",
+    }
+
+    resp = client.get("/pipeline")
+
+    assert resp.status_code == 200
+    assert b'const initialPipelineState = ' in resp.data
+    assert b'pipeline-restore' in resp.data
+    assert b'restored improved resume' in resp.data
+
+
+def test_pipeline_reset_clears_server_state() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    with client.session_transaction() as flask_session:
+        flask_session["pipeline_id"] = "pipeline-reset"
+
+    ui_module._pipeline_sessions["pipeline-reset"] = {
+        "resume_text": "resume",
+        "job_description": "jd",
+        "fit_report": "report",
+        "improved_resume": None,
+    }
+
+    resp = client.post("/pipeline/reset")
+
+    assert resp.status_code == 200
+    assert resp.get_json() == {"ok": True}
+    assert "pipeline-reset" not in ui_module._pipeline_sessions
+    with client.session_transaction() as flask_session:
+        assert "pipeline_id" not in flask_session
 
 
 def test_pipeline_reanalyze_accepts_resume_override(monkeypatch: pytest.MonkeyPatch) -> None:

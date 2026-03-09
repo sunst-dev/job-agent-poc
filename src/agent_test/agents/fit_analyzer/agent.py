@@ -37,7 +37,7 @@ from langchain_core.language_models import BaseChatModel
 
 from agent_test.utils.logger import setup_logger
 from agent_test.utils.openrouter_client import get_chat_model, get_crew_llm
-from ..base import Agent
+from ..base import Agent, should_send_welcome_greeting
 from .graph import _GREETING, build_fit_analyzer_graph
 from .state import FitAnalyzerState
 from agent_test.config import DEFAULT_MODEL, FIT_ANALYZER_TEMPERATURE
@@ -170,8 +170,9 @@ class FitAnalyzerAgent(Agent):
         messages = list(history or [])
         messages.append({"role": "user", "content": observation})
 
-        # First-turn shortcircuit — no LLM call needed.
-        if not any(m.get("role") == "assistant" for m in messages):
+        # Preserve the lightweight greeting for a simple first-turn hello,
+        # but process substantive first-turn inputs immediately.
+        if should_send_welcome_greeting(observation, history=history):
             yield {"type": "response", "text": _GREETING}
             return
 

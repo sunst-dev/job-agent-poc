@@ -59,11 +59,24 @@ _MOCK_REPORT = "🎯 JOB FIT ANALYSIS\nOVERALL FIT SCORE: 82%"
 # ---------------------------------------------------------------------------
 
 
-def test_act_returns_clarification_when_no_inputs() -> None:
-    """On the very first turn the agent always returns the welcome greeting."""
+def test_act_returns_greeting_on_simple_first_turn() -> None:
+    """A simple greeting still gets the lightweight welcome response."""
     agent = FitAnalyzerAgent(llm=_llm_that_requests_clarification())  # LLM not called
     result = agent.act("hi")
     assert result == _GREETING
+
+
+def test_act_processes_substantive_first_turn() -> None:
+    """A first-turn JD+resume payload should not be dropped behind a greeting."""
+    llm = _llm_that_has_both_inputs()
+    agent = FitAnalyzerAgent(llm=llm)
+
+    with patch(
+        "agent_test.agents.fit_analyzer.graph.run_fit_analyzer_crew", return_value=_MOCK_REPORT
+    ):
+        result = agent.act("Here is my JD and resume: ...")
+
+    assert result == _MOCK_REPORT
 
 
 def test_act_returns_clarification_when_missing_resume() -> None:

@@ -20,6 +20,7 @@ from agent_test.agents.pipeline import PipelineOrchestrator
 
 _TITLE_MAX = 30        # chars used as auto-title from first user message
 _TITLE_RENAME_MAX = 60  # max chars allowed when manually renaming
+_MAX_PIPELINE_SESSIONS = 12
 
 _AGENT_TYPES = {
     "chat":            {"label": "General Chat",        "model": DEFAULT_MODEL},
@@ -65,7 +66,10 @@ def _save_history() -> None:
 _history_store: dict[str, list[dict[str, str]]] = _load_history()
 
 
-def _get_or_create_agent(sid: str, agent_type: str = "chat") -> CrewAIAgent | FitAnalyzerAgent:
+def _get_or_create_agent(
+    sid: str,
+    agent_type: str = "chat",
+) -> CrewAIAgent | FitAnalyzerAgent | ResumeImproveAgent:
     """Return the cached agent for *sid*, creating one on first access."""
     if sid not in _agent_cache:
         if agent_type == "resume":
@@ -110,6 +114,58 @@ def _ensure_active(sess_map: dict, agent_type: str = "chat") -> str:
             session["sessions"] = sess_map
             session["active_id"] = active_id
     return active_id
+
+
+def _evict_pipeline_session(pid: str | None) -> None:
+    """Remove a pipeline session from the in-memory store and request session."""
+    if not pid:
+        return
+    _pipeline_sessions.pop(pid, None)
+    if session.get("pipeline_id") == pid:
+        session.pop("pipeline_id", None)
+
+
+def _reset_current_pipeline_session() -> None:
+    """Drop the current pipeline session, if the request has one."""
+    _evict_pipeline_session(session.get("pipeline_id"))
+
+
+def _prune_pipeline_sessions(keep_pid: str | None = None) -> None:
+    """Bound server-side pipeline memory usage.
+
+    The refreshed pipeline UI encourages repeated staged runs, so prune old
+    in-memory sessions and keep at most ``_MAX_PIPELINE_SESSIONS`` entries.
+    """
+    if len(_pipeline_sessions) <= _MAX_PIPELINE_SESSIONS:
+        return
+
+    for pid in list(_pipeline_sessions):
+        if len(_pipeline_sessions) <= _MAX_PIPELINE_SESSIONS:
+            break
+        if pid == keep_pid:
+            continue
+        _pipeline_sessions.pop(pid, None)
+
+
+def _get_current_pipeline_state() -> dict | None:
+    """Return a JSON-safe copy of the current pipeline session state."""
+    pid = session.get("pipeline_id")
+    state = _pipeline_sessions.get(pid) if pid else None
+    if not state:
+        if pid:
+            session.pop("pipeline_id", None)
+        return None
+
+    return {
+        "pipeline_id": pid,
+        "resume_text": state.get("resume_text", ""),
+        "job_description": state.get("job_description", ""),
+        "fit_report": state.get("fit_report"),
+        "improvement_report": state.get("improvement_report"),
+        "improved_resume": state.get("improved_resume"),
+        "reanalyzed_fit_report": state.get("reanalyzed_fit_report"),
+        "consent": state.get("consent", "Pending"),
+    }
 
 
 def create_app() -> Flask:
@@ -302,7 +358,16 @@ def create_app() -> Flask:
 
     @app.route("/pipeline")
     def pipeline_page():
-        return render_template("pipeline.html", model=DEFAULT_MODEL)
+        return render_template(
+            "pipeline.html",
+            model=DEFAULT_MODEL,
+            pipeline_state=_get_current_pipeline_state(),
+        )
+
+    @app.route("/pipeline/reset", methods=("POST",))
+    def pipeline_reset():
+        _reset_current_pipeline_session()
+        return jsonify({"ok": True})
 
     @app.route("/pipeline/analyze", methods=("POST",))
     def pipeline_analyze():
@@ -312,15 +377,21 @@ def create_app() -> Flask:
         if not resume_text or not job_description:
             return jsonify({"error": "Both resume and job description are required."}), 400
 
+        _reset_current_pipeline_session()
+
         # Create a fresh pipeline session.
         pid = _uuid.uuid4().hex
         _pipeline_sessions[pid] = {
             "resume_text": resume_text,
             "job_description": job_description,
             "fit_report": None,
+            "improvement_report": None,
             "improved_resume": None,
+            "reanalyzed_fit_report": None,
+            "consent": "Pending",
         }
         session["pipeline_id"] = pid
+        _prune_pipeline_sessions(keep_pid=pid)
 
         orchestrator = PipelineOrchestrator()
 
@@ -354,7 +425,9 @@ def create_app() -> Flask:
         def generate():
             for event in orchestrator.stream_improvement(resume_text, job_description, fit_report):
                 if event.get("type") == "result":
+                    _pipeline_sessions[pid]["improvement_report"] = event.get("text", "")
                     _pipeline_sessions[pid]["improved_resume"] = event.get("improved_resume", "")
+                    _pipeline_sessions[pid]["consent"] = "Approved"
                 if event.get("type") != "heartbeat":
                     yield f"data: {_json.dumps(event)}\n\n"
                 else:

@@ -25,6 +25,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, StateGraph
 
+from ..base import should_send_welcome_greeting
 from .crew import run_resume_improve_crew
 from .state import ResumeImproveState
 
@@ -160,9 +161,13 @@ def _make_input_collector_node(llm: BaseChatModel):
         """Inspect the conversation and extract all required inputs, or ask for more."""
         messages = state["messages"]
 
-        # Short-circuit on the very first user message — greet without an LLM call.
-        has_assistant_turn = any(m.get("role") == "assistant" for m in messages)
-        if not has_assistant_turn:
+        # Preserve the lightweight greeting for a simple first-turn hello,
+        # but let substantive first-turn inputs flow through extraction.
+        latest_user_message = next(
+            (str(m.get("content") or "") for m in reversed(messages) if m.get("role") == "user"),
+            "",
+        )
+        if should_send_welcome_greeting(latest_user_message, history=messages[:-1]):
             return {
                 "clarification_needed": True,
                 "clarification_question": _GREETING,
