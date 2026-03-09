@@ -40,9 +40,7 @@ from agent_test.utils.openrouter_client import get_chat_model, get_crew_llm
 from ..base import Agent
 from .graph import _GREETING, build_fit_analyzer_graph
 from .state import FitAnalyzerState
-
-# Use a capable model for multi-step reasoning; can be overridden at init.
-DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
+from agent_test.config import DEFAULT_MODEL, FIT_ANALYZER_TEMPERATURE
 
 # Human-readable labels for each LangGraph node.
 _STEP_LABELS: dict[str, tuple[str, str]] = {
@@ -118,7 +116,7 @@ class FitAnalyzerAgent(Agent):
         self,
         llm: BaseChatModel | None = None,
         model: str = DEFAULT_MODEL,
-        temperature: float = 0.1,
+        temperature: float = FIT_ANALYZER_TEMPERATURE,
     ) -> None:
         if llm is None:
             llm = get_chat_model(model=model, temperature=temperature)

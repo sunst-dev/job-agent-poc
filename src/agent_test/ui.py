@@ -12,21 +12,24 @@ import uuid as _uuid
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, session, stream_with_context, url_for
 
-from agent_test.agents.crewai_agent import CrewAIAgent, DEFAULT_MODEL
-from agent_test.agents.fit_analyzer.agent import (
-    DEFAULT_MODEL as RESUME_DEFAULT_MODEL,
-    FitAnalyzerAgent,
-)
+from agent_test.config import DEFAULT_MODEL
+from agent_test.agents.crewai_agent import CrewAIAgent
+from agent_test.agents.fit_analyzer.agent import FitAnalyzerAgent
 from agent_test.agents.resume_improve.agent import ResumeImproveAgent
+from agent_test.agents.pipeline import PipelineOrchestrator
 
 _TITLE_MAX = 30        # chars used as auto-title from first user message
 _TITLE_RENAME_MAX = 60  # max chars allowed when manually renaming
 
 _AGENT_TYPES = {
     "chat":            {"label": "General Chat",        "model": DEFAULT_MODEL},
-    "resume":          {"label": "Resume Analyzer",     "model": RESUME_DEFAULT_MODEL},
-    "resume_improve":  {"label": "Resume Improvement",  "model": RESUME_DEFAULT_MODEL},
+    "resume":          {"label": "Resume Analyzer",     "model": DEFAULT_MODEL},
+    "resume_improve":  {"label": "Resume Improvement",  "model": DEFAULT_MODEL},
 }
+
+# Server-side state for the pipeline page.  Each entry stores the inputs and
+# outputs for one pipeline run, keyed by a pipeline-session UUID.
+_pipeline_sessions: dict[str, dict] = {}
 
 # Server-side cache of compiled agents, keyed by session id.
 # Each entry is evicted when its session is deleted or the server restarts.
@@ -294,6 +297,105 @@ def create_app() -> Flask:
     @app.route("/clear")
     def clear():
         return redirect(url_for("new_session"))
+
+    # ── Pipeline ────────────────────────────────────────────────────
+
+    @app.route("/pipeline")
+    def pipeline_page():
+        return render_template("pipeline.html", model=DEFAULT_MODEL)
+
+    @app.route("/pipeline/analyze", methods=("POST",))
+    def pipeline_analyze():
+        data = request.get_json(force=True)
+        resume_text = (data.get("resume_text") or "").strip()
+        job_description = (data.get("job_description") or "").strip()
+        if not resume_text or not job_description:
+            return jsonify({"error": "Both resume and job description are required."}), 400
+
+        # Create a fresh pipeline session.
+        pid = _uuid.uuid4().hex
+        _pipeline_sessions[pid] = {
+            "resume_text": resume_text,
+            "job_description": job_description,
+            "fit_report": None,
+            "improved_resume": None,
+        }
+        session["pipeline_id"] = pid
+
+        orchestrator = PipelineOrchestrator()
+
+        def generate():
+            for event in orchestrator.stream_fit_analysis(resume_text, job_description):
+                if event.get("type") == "result":
+                    _pipeline_sessions[pid]["fit_report"] = event["text"]
+                if event.get("type") != "heartbeat":
+                    yield f"data: {_json.dumps(event)}\n\n"
+                else:
+                    yield ": heartbeat\n\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @app.route("/pipeline/improve", methods=("POST",))
+    def pipeline_improve():
+        pid = session.get("pipeline_id")
+        state = _pipeline_sessions.get(pid) if pid else None
+        if not state or not state.get("fit_report"):
+            return jsonify({"error": "No fit analysis found — run /pipeline/analyze first."}), 400
+
+        orchestrator = PipelineOrchestrator()
+        resume_text = state["resume_text"]
+        job_description = state["job_description"]
+        fit_report = state["fit_report"]
+
+        def generate():
+            for event in orchestrator.stream_improvement(resume_text, job_description, fit_report):
+                if event.get("type") == "result":
+                    _pipeline_sessions[pid]["improved_resume"] = event.get("improved_resume", "")
+                if event.get("type") != "heartbeat":
+                    yield f"data: {_json.dumps(event)}\n\n"
+                else:
+                    yield ": heartbeat\n\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @app.route("/pipeline/reanalyze", methods=("POST",))
+    def pipeline_reanalyze():
+        pid = session.get("pipeline_id")
+        state = _pipeline_sessions.get(pid) if pid else None
+        if not state or not state.get("improved_resume"):
+            return jsonify({"error": "No improved resume found — run /pipeline/improve first."}), 400
+
+        data = request.get_json(silent=True) or {}
+        improved_resume = (data.get("resume_text") or state.get("improved_resume") or "").strip()
+        if not improved_resume:
+            return jsonify({"error": "Improved resume text is required for re-analysis."}), 400
+        state["improved_resume"] = improved_resume
+
+        orchestrator = PipelineOrchestrator()
+        job_description = state["job_description"]
+
+        def generate():
+            for event in orchestrator.stream_fit_analysis(improved_resume, job_description):
+                if event.get("type") == "result":
+                    _pipeline_sessions[pid]["reanalyzed_fit_report"] = event["text"]
+                if event.get("type") != "heartbeat":
+                    yield f"data: {_json.dumps(event)}\n\n"
+                else:
+                    yield ": heartbeat\n\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     return app
 

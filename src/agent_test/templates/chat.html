@@ -81,6 +81,11 @@
       color: #a78bfa;
     }
     .new-chat-btn.resume_improve:hover { background: #1e1630; }
+    .new-chat-btn.pipeline {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+    .new-chat-btn.pipeline:hover { background: #2a1e0e; }
 
     .model-badge {
       margin-top: auto;
@@ -823,6 +828,15 @@
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
     </svg>
     Resume Improvement
+  </a>
+  <a class="new-chat-btn pipeline" href="/pipeline">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83
+               M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+    </svg>
+    Pipeline
   </a>
 
   {% for sid, sdata in sessions.items() %}

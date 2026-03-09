@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guided Resume Workflow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c1218;
+      --bg-glow: radial-gradient(circle at top left, rgba(74, 158, 255, 0.18), transparent 35%),
+                 radial-gradient(circle at top right, rgba(16, 163, 127, 0.14), transparent 30%),
+                 linear-gradient(180deg, #0c1218 0%, #101820 100%);
+      --surface: rgba(18, 27, 36, 0.88);
+      --surface-strong: #13202a;
+      --surface-muted: #0f1820;
+      --border: rgba(149, 186, 213, 0.18);
+      --border-strong: rgba(149, 186, 213, 0.3);
+      --accent: #10a37f;
+      --accent-soft: rgba(16, 163, 127, 0.14);
+      --secondary: #4a9eff;
+      --secondary-soft: rgba(74, 158, 255, 0.14);
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --text: #ebf2f6;
+      --text-dim: #9bb0bf;
+      --text-muted: #7e94a5;
+      --radius: 20px;
+      --radius-sm: 12px;
+      --shadow: 0 20px 60px rgba(4, 8, 12, 0.45);
+    }
+
+    html, body { min-height: 100%; }
+
+    body {
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      background: var(--bg-glow);
+      color: var(--text);
+      overflow-y: auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 28px;
+      background: rgba(8, 12, 17, 0.84);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .nav-back:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+      border-color: var(--border);
+    }
+
+    .nav-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .nav-model {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+    .nav-model span { color: var(--accent); font-weight: 700; }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 28px 96px;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .rail {
+      position: sticky;
+      top: 92px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      grid-column: 1 / -1;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr);
+      gap: 24px;
+      overflow: hidden;
+      position: relative;
+      background:
+        linear-gradient(135deg, rgba(74, 158, 255, 0.16), transparent 42%),
+        linear-gradient(315deg, rgba(16, 163, 127, 0.16), transparent 38%),
+        var(--surface);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -60px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 163, 127, 0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 158, 255, 0.25);
+      background: rgba(74, 158, 255, 0.1);
+      color: #b7d5ff;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.05;
+      letter-spacing: -.03em;
+      margin-bottom: 14px;
+      max-width: 12ch;
+    }
+
+    .hero p {
+      max-width: 62ch;
+      color: var(--text-dim);
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .hero-points {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(8, 14, 20, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .summary-label {
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .summary-value {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+    }
+
+    .summary-subtext {
+      margin-top: 6px;
+      color: var(--text-dim);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .rail-card {
+      padding: 18px;
+    }
+
+    .rail-card h2 {
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .stage-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stage-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+
+    .stage-item[data-state="running"] {
+      background: rgba(16, 163, 127, 0.12);
+      border-color: rgba(16, 163, 127, 0.38);
+      transform: translateY(-1px);
+    }
+
+    .stage-item[data-state="done"] {
+      background: rgba(74, 222, 128, 0.12);
+      border-color: rgba(74, 222, 128, 0.28);
+    }
+
+    .stage-item[data-state="error"] {
+      background: rgba(248, 113, 113, 0.12);
+      border-color: rgba(248, 113, 113, 0.34);
+    }
+
+    .stage-item[data-state="skipped"] {
+      background: rgba(251, 191, 36, 0.08);
+      border-color: rgba(251, 191, 36, 0.24);
+    }
+
+    .stage-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .stage-name {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stage-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .metric .summary-value {
+      font-size: 24px;
+    }
+
+    .workflow-status {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(74, 158, 255, 0.08);
+      border: 1px solid rgba(74, 158, 255, 0.16);
+      color: #cce1ff;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .phase-card {
+      overflow: hidden;
+      animation: fadeUp .28s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none !important; }
+
+    .phase-hdr {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(9, 14, 18, 0.4);
+    }
+
+    .phase-hdr-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .phase-hdr-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .phase-hdr-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .phase-hdr-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .phase-hdr-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 11px;
+      border-radius: 999px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .badge-running { color: var(--accent); border-color: rgba(16, 163, 127, 0.4); background: rgba(16, 163, 127, 0.12); }
+    .badge-done { color: #4ade80; border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.12); }
+    .badge-error { color: var(--danger); border-color: rgba(248, 113, 113, 0.42); background: rgba(248, 113, 113, 0.12); }
+    .badge-skipped { color: var(--warning); border-color: rgba(251, 191, 36, 0.38); background: rgba(251, 191, 36, 0.12); }
+
+    .phase-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .input-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .upload-link {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: #b7d5ff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .04em;
+      text-transform: none;
+    }
+
+    .upload-link:hover { color: #d8e8ff; }
+
+    .ta-wrap {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(9, 15, 20, 0.7);
+      padding: 14px;
+      transition: border-color .15s, box-shadow .15s, transform .15s;
+    }
+
+    .ta-wrap:focus-within {
+      border-color: rgba(74, 158, 255, 0.4);
+      box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 240px;
+      resize: vertical;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    textarea::placeholder { color: var(--text-muted); }
+    textarea:disabled { opacity: .62; cursor: not-allowed; }
+
+    .field-meta {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .intake-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .intake-help {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: grid;
+      gap: 12px;
+    }
+
+    .mini-title {
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .help-list {
+      display: grid;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    .help-item {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(9, 15, 20, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      transition: transform .12s, background .15s, border-color .15s, color .15s, opacity .15s;
+    }
+
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #0f946f; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.04); border-color: var(--border); color: var(--text); }
+    .btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+    .btn-improve { background: rgba(74, 158, 255, 0.12); border-color: rgba(74, 158, 255, 0.32); color: #cae0ff; }
+    .btn-improve:hover:not(:disabled) { background: rgba(74, 158, 255, 0.18); }
+    .btn-danger { background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.32); color: #fecaca; }
+    .btn-danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.16); }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      min-height: 18px;
+    }
+
+    .pipeline-panel {
+      background: rgba(9, 15, 20, 0.66);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .pipeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .pipeline-title {
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .pipeline-timer,
+    .step-duration {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-dim);
+    }
+
+    .pipeline-steps { display: flex; flex-direction: column; }
+
+    .pipeline-step {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) 18px 40px;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13px;
+    }
+
+    .pipeline-step:last-child { border-bottom: none; }
+    .pipeline-step.active { background: rgba(16, 163, 127, 0.08); }
+    .pipeline-step.done { opacity: .82; }
+    .step-icon-box, .step-state {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(16, 163, 127, 0.22);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .step-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-check svg { width: 10px; height: 10px; display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .pipeline-status {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 12px;
+      line-height: 1.5;
+      min-height: 42px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .error-banner,
+    .notice-banner {
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .error-banner {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.36);
+      color: #fecaca;
+    }
+
+    .notice-banner {
+      background: rgba(74, 158, 255, 0.1);
+      border: 1px solid rgba(74, 158, 255, 0.24);
+      color: #d6e7ff;
+    }
+
+    .consent-panel,
+    .review-panel,
+    .completion-panel {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: rgba(9, 15, 20, 0.56);
+    }
+
+    .consent-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .consent-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .consent-text strong { color: var(--accent); }
+
+    .review-panel {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section-topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-topline p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .compare-card {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      display: grid;
+      gap: 10px;
+    }
+
+    .compare-card h3 {
+      font-size: 13px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .resume-preview,
+    .resume-editor {
+      min-height: 260px;
+      max-height: 540px;
+      overflow: auto;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(5, 10, 14, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    .resume-editor {
+      width: 100%;
+      resize: vertical;
+      min-height: 260px;
+      max-height: none;
+      overflow: visible;
+      border: 1px solid rgba(74, 158, 255, 0.18);
+    }
+
+    .result-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .completion-panel {
+      display: grid;
+      gap: 10px;
+      background: rgba(16, 163, 127, 0.08);
+      border-color: rgba(16, 163, 127, 0.24);
+    }
+
+    .completion-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .fit-report {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    .fit-header {
+      background: linear-gradient(135deg, rgba(16, 163, 127, 0.14) 0%, rgba(19, 32, 42, 0.92) 100%);
+      border: 1px solid rgba(16, 163, 127, 0.3);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .fit-title-row,
+    .improve-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .fit-title-text,
+    .improve-title-text {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .fit-title-text { color: #86f0ca; }
+    .improve-title-text { color: #b7d5ff; }
+    .fit-meta, .improve-meta { font-size: 12.5px; color: var(--text-dim); }
+
+    .fit-score-row,
+    .improve-score-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .fit-score-circle {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 10, 14, 0.64);
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .fit-score-circle span { font-size: 11px; font-weight: 500; color: var(--text-dim); margin-top: -4px; }
+    .fit-score-circle.excellent, .improve-score-value.excellent { color: #4ade80; border-color: #4ade80; }
+    .fit-score-circle.good, .improve-score-value.good { color: var(--accent); border-color: var(--accent); }
+    .fit-score-circle.marginal, .improve-score-value.marginal { color: var(--warning); border-color: var(--warning); }
+    .fit-score-circle.poor, .improve-score-value.poor { color: var(--danger); border-color: var(--danger); }
+
+    .fit-rationale { flex: 1; font-size: 13px; color: var(--text); margin: 0; }
+
+    .fit-section,
+    .improve-section {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .fit-section-hdr,
+    .improve-section-hdr {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .fit-strengths, .improve-resume-hdr { background: rgba(74, 222, 128, 0.12); color: #86efac; }
+    .fit-gaps, .improve-gaps-hdr { background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
+    .fit-ats, .improve-audit-hdr { background: rgba(74, 158, 255, 0.12); color: #93c5fd; }
+    .fit-flags { background: rgba(251, 191, 36, 0.12); color: #fcd34d; }
+    .fit-reality, .improve-changelog-hdr { background: rgba(165, 180, 252, 0.12); color: #c7d2fe; }
+    .fit-rec, .improve-ats-hdr { background: rgba(192, 132, 252, 0.12); color: #d8b4fe; }
+    .fit-action, .improve-upskill-hdr { background: rgba(16, 163, 127, 0.12); color: #86f0ca; }
+
+    .fit-body,
+    .improve-body {
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 13px;
+      background: transparent;
+    }
+
+    .fit-body p,
+    .improve-body p { margin: 0 0 7px; }
+    .fit-body p:last-child,
+    .improve-body p:last-child { margin-bottom: 0; }
+    .fit-body ul, .fit-body ol,
+    .improve-body ul, .improve-body ol { margin: 4px 0 8px 20px; padding: 0; }
+    .fit-body li,
+    .improve-body li { margin-bottom: 5px; }
+
+    .fit-keyword-chips,
+    .improve-keyword-chips,
+    .fit-rec-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 6px 0 10px;
+    }
+
+    .fit-keyword,
+    .improve-keyword,
+    .fit-rec-chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .fit-rec-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 0 12px rgba(16, 163, 127, 0.24);
+    }
+
+    .improve-report {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+
+    .improve-header {
+      background: linear-gradient(135deg, rgba(74, 158, 255, 0.14) 0%, rgba(19, 32, 42, 0.92) 100%);
+      border: 1px solid rgba(74, 158, 255, 0.24);
+      border-radius: 18px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .improve-score-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .improve-score-label {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .improve-score-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .improve-score-arrow {
+      font-size: 22px;
+      color: var(--text-dim);
+      align-self: flex-end;
+      padding-bottom: 4px;
+    }
+
+    .improve-low-score-warning {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.28);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #fecaca;
+      font-size: 12.5px;
+    }
+
+    .improve-resume-text {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text);
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    .completion-list {
+      display: grid;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1120px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+
+      .rail {
+        position: static;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .input-grid,
+      .compare-grid,
+      .intake-row,
+      .consent-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding: 18px 18px 72px;
+      }
+
+      .nav {
+        padding: 14px 18px;
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav-back" href="/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Chat
+    </a>
+    <span class="nav-title">Guided Resume Workflow</span>
+    <span class="nav-model">Model: <span>{{ model }}</span></span>
+  </nav>
+
+  <main class="page">
+    <section class="hero card">
+      <div>
+        <span class="hero-kicker">Single Intake Workflow</span>
+        <h1>Upload once, review the result, then choose the next move.</h1>
+        <p id="workflowLead">
+          Paste the job description and your resume, run the fit analysis, review the report,
+          approve the rewrite only if it looks useful, then re-run the fit check on the updated resume.
+        </p>
+        <div class="hero-points">
+          <span class="hero-pill">1. Intake and validate</span>
+          <span class="hero-pill">2. Analyze fit</span>
+          <span class="hero-pill">3. Review and edit the rewrite</span>
+          <span class="hero-pill">4. Re-analyze before exporting</span>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="summary-grid">
+          <div class="summary-stat">
+            <span class="summary-label">Current Stage</span>
+            <div class="summary-value" id="heroStage">Intake</div>
+            <div class="summary-subtext" id="heroStageMeta">Ready for job description and resume text.</div>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-label">Readiness</span>
+            <div class="summary-value" id="heroReadiness">0%</div>
+            <div class="summary-subtext" id="heroReadinessMeta">Fill both required inputs to unlock analysis.</div>
+          </div>
+        </div>
+        <div class="workflow-status" id="workflowStatus">
+          This page is designed as a guided flow, not a free-form chat. Each stage keeps its artifacts visible so you do not have to move data manually.
+        </div>
+      </div>
+    </section>
+
+    <aside class="rail">
+      <section class="rail-card card">
+        <h2>Stage Progress</h2>
+        <div class="stage-list">
+          <div class="stage-item" id="stage-intake" data-state="running">
+            <div class="stage-icon">1</div>
+            <div>
+              <div class="stage-name">Inputs</div>
+              <div class="stage-meta" id="stage-intake-meta">Waiting for job description and resume.</div>
+            </div>
+          </div>
+          <div class="stage-item" id="stage-fit" data-state="waiting">
+            <div class="stage-icon">2</div>
+            <div>
+              <div class="stage-name">Fit Analysis</div>
+              <div class="stage-meta" id="stage-fit-meta">Not started yet.</div>
+            </div>
+          </div>
+          <div class="stage-item" id="stage-improve" data-state="waiting">
+            <div class="stage-icon">3</div>
+            <div>
+              <div class="stage-name">Resume Improvement</div>
+              <div class="stage-meta" id="stage-improve-meta">Runs only after your approval.</div>
+            </div>
+          </div>
+          <div class="stage-item" id="stage-reanalyze" data-state="waiting">
+            <div class="stage-icon">4</div>
+            <div>
+              <div class="stage-name">Updated Fit Check</div>
+              <div class="stage-meta" id="stage-reanalyze-meta">Review the rewrite before rerunning.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rail-card card">
+        <h2>Input Metrics</h2>
+        <div class="metrics-grid">
+          <div class="metric">
+            <span class="summary-label">JD Words</span>
+            <div class="summary-value" id="jdWords">0</div>
+            <div class="summary-subtext" id="jdLines">0 lines</div>
+          </div>
+          <div class="metric">
+            <span class="summary-label">Resume Words</span>
+            <div class="summary-value" id="resumeWords">0</div>
+            <div class="summary-subtext" id="resumeLines">0 lines</div>
+          </div>
+          <div class="metric">
+            <span class="summary-label">Rewritten Words</span>
+            <div class="summary-value" id="improvedWords">0</div>
+            <div class="summary-subtext" id="improvedLines">0 lines</div>
+          </div>
+          <div class="metric">
+            <span class="summary-label">Consent State</span>
+            <div class="summary-value" id="consentState">Pending</div>
+            <div class="summary-subtext" id="consentMeta">Decide after the first fit report.</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <section class="phase-card card" id="phase1">
+        <div class="phase-hdr">
+          <span class="phase-hdr-icon">📝</span>
+          <div class="phase-hdr-copy">
+            <div class="phase-hdr-title">Intake</div>
+            <div class="phase-hdr-desc">Paste the two inputs once, or load plain-text files and review them before analysis.</div>
+          </div>
+          <span class="phase-hdr-badge" id="badge1">Ready</span>
+        </div>
+        <div class="phase-body">
+          <div class="input-grid">
+            <div class="input-group">
+              <label>
+                <span>Job Description</span>
+                <button class="upload-link" type="button" onclick="document.getElementById('jdFileInput').click()">Load text file</button>
+              </label>
+              <div class="ta-wrap">
+                <textarea id="jdText" placeholder="Paste the full job description here."></textarea>
+              </div>
+              <div class="field-meta">
+                <span id="jdMeta">0 words · 0 lines</span>
+                <span>Best if this includes responsibilities, required skills, and seniority.</span>
+              </div>
+              <input id="jdFileInput" type="file" accept=".txt,.md,.rtf,text/plain" class="hidden" />
+            </div>
+
+            <div class="input-group">
+              <label>
+                <span>Resume</span>
+                <button class="upload-link" type="button" onclick="document.getElementById('resumeFileInput').click()">Load text file</button>
+              </label>
+              <div class="ta-wrap">
+                <textarea id="resumeText" placeholder="Paste your resume text here."></textarea>
+              </div>
+              <div class="field-meta">
+                <span id="resumeMeta">0 words · 0 lines</span>
+                <span>Paste extracted text for PDF or DOCX resumes.</span>
+              </div>
+              <input id="resumeFileInput" type="file" accept=".txt,.md,.rtf,text/plain" class="hidden" />
+            </div>
+          </div>
+
+          <div class="intake-row">
+            <div class="btn-row">
+              <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalysis()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Analyze Job Fit
+              </button>
+              <button class="btn btn-secondary" type="button" onclick="clearInputs()">Clear Inputs</button>
+              <span class="hint" id="inputHint">Fill both fields to continue.</span>
+            </div>
+
+            <div class="intake-help">
+              <div class="mini-title">What makes this work well</div>
+              <div class="help-list">
+                <div class="help-item">Use the actual job description rather than a short summary.</div>
+                <div class="help-item">Keep resume sections in the pasted order so the rewrite can preserve structure.</div>
+                <div class="help-item">After the rewrite, edit the improved resume before the final re-analysis if you want tighter control.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="phase-card card hidden" id="phase2">
+        <div class="phase-hdr">
+          <span class="phase-hdr-icon">🎯</span>
+          <div class="phase-hdr-copy">
+            <div class="phase-hdr-title">Fit Analysis</div>
+            <div class="phase-hdr-desc">The analyzer scores your resume against the job description and explains the tradeoffs.</div>
+          </div>
+          <span class="phase-hdr-badge badge-running" id="badge2">Running</span>
+        </div>
+        <div class="phase-body">
+          <div id="fitProgress"></div>
+          <div id="fitResult" class="result-shell hidden"></div>
+          <div class="consent-panel hidden" id="consentPanel">
+            <div class="consent-text">
+              The first report is ready. <strong>Start the rewrite only if you want the system to adjust your resume</strong> using the gaps and strengths it found.
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-improve" id="improveBtn" onclick="startImprovement()">Improve Resume</button>
+              <button class="btn btn-secondary" id="skipBtn" onclick="skipImprovement()">Stop After Analysis</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="phase-card card hidden" id="phase3">
+        <div class="phase-hdr">
+          <span class="phase-hdr-icon">✍️</span>
+          <div class="phase-hdr-copy">
+            <div class="phase-hdr-title">Resume Improvement</div>
+            <div class="phase-hdr-desc">Generate a revised resume, then review and edit it before the final check.</div>
+          </div>
+          <span class="phase-hdr-badge badge-running" id="badge3">Running</span>
+        </div>
+        <div class="phase-body">
+          <div id="improveProgress"></div>
+          <div id="improveResult" class="result-shell hidden"></div>
+
+          <div class="review-panel hidden" id="reviewPanel">
+            <div class="section-topline">
+              <div>
+                <div class="mini-title">Review The Rewrite</div>
+                <p>Make any edits you want here. The final fit check uses the text in the editable panel, not the raw model output.</p>
+              </div>
+              <div class="btn-row">
+                <button class="btn btn-secondary" type="button" onclick="copyImprovedResume()">Copy Improved Resume</button>
+                <button class="btn btn-primary" id="reanalyzeBtn" type="button" onclick="startReanalysis()">Run Updated Fit Check</button>
+              </div>
+            </div>
+
+            <div class="compare-grid">
+              <div class="compare-card">
+                <h3>Original Resume</h3>
+                <div class="resume-preview" id="originalResumePreview"></div>
+              </div>
+              <div class="compare-card">
+                <h3>Editable Improved Resume</h3>
+                <textarea class="resume-editor" id="reviewedResumeText" placeholder="The improved resume will appear here."></textarea>
+              </div>
+            </div>
+            <div class="hint" id="reviewHint">You can fine-tune wording here before the final analysis.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="phase-card card hidden" id="phase4">
+        <div class="phase-hdr">
+          <span class="phase-hdr-icon">📈</span>
+          <div class="phase-hdr-copy">
+            <div class="phase-hdr-title">Updated Fit Analysis</div>
+            <div class="phase-hdr-desc">This is the final report based on the reviewed resume text above.</div>
+          </div>
+          <span class="phase-hdr-badge badge-running" id="badge4">Running</span>
+        </div>
+        <div class="phase-body">
+          <div id="reanalyzeProgress"></div>
+          <div id="reanalyzeResult" class="result-shell hidden"></div>
+          <div class="completion-panel hidden" id="completionPanel">
+            <div class="completion-title">Workflow complete</div>
+            <div class="completion-list">
+              <div>Your updated fit report is based on the reviewed resume text shown above.</div>
+              <div>Copy the improved resume if you want to export it elsewhere, or restart to evaluate a different role.</div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-secondary" type="button" onclick="copyImprovedResume()">Copy Improved Resume</button>
+              <button class="btn btn-primary" type="button" onclick="restartPipeline()">Start New Analysis</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const pipelineState = {
+      originalResume: '',
+      improvedResume: '',
+      fitReport: '',
+      finalReport: '',
+      consent: 'Pending',
+    };
+    const defaultCompletionMarkup = document.getElementById('completionPanel').innerHTML;
+
+    function show(id) { document.getElementById(id).classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id).classList.add('hidden'); }
+    function scrollToId(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function escHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function stripFences(text) {
+      return String(text || '').trim()
+        .replace(/^```[a-z]*\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim();
+    }
+
+    function isStructuredHtml(text) {
+      const clean = stripFences(text);
+      return clean.startsWith('<div class="fit-report">') || clean.startsWith('<div class="improve-report">');
+    }
+
+    function countWords(text) {
+      const clean = String(text || '').trim();
+      return clean ? clean.split(/\s+/).length : 0;
+    }
+
+    function countLines(text) {
+      const clean = String(text || '');
+      if (!clean.trim()) return 0;
+      return clean.split(/\r?\n/).length;
+    }
+
+    function setBadge(id, state, label) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = 'phase-hdr-badge';
+      if (state && state !== 'waiting') el.classList.add(`badge-${state}`);
+      el.textContent = label;
+    }
+
+    function setStage(stage, state, detail) {
+      const item = document.getElementById(`stage-${stage}`);
+      const meta = document.getElementById(`stage-${stage}-meta`);
+      if (item) item.dataset.state = state;
+      if (meta && detail) meta.textContent = detail;
+    }
+
+    function setHero(stage, stageMeta, readiness, readinessMeta) {
+      document.getElementById('heroStage').textContent = stage;
+      document.getElementById('heroStageMeta').textContent = stageMeta;
+      document.getElementById('heroReadiness').textContent = readiness;
+      document.getElementById('heroReadinessMeta').textContent = readinessMeta;
+    }
+
+    function setWorkflowStatus(text) {
+      document.getElementById('workflowStatus').textContent = text;
+    }
+
+    function updateMetrics() {
+      const jd = document.getElementById('jdText').value;
+      const resume = document.getElementById('resumeText').value;
+      const improved = document.getElementById('reviewedResumeText').value;
+
+      const jdWords = countWords(jd);
+      const jdLines = countLines(jd);
+      const resumeWords = countWords(resume);
+      const resumeLines = countLines(resume);
+      const improvedWords = countWords(improved);
+      const improvedLines = countLines(improved);
+
+      document.getElementById('jdWords').textContent = jdWords;
+      document.getElementById('jdLines').textContent = `${jdLines} lines`;
+      document.getElementById('resumeWords').textContent = resumeWords;
+      document.getElementById('resumeLines').textContent = `${resumeLines} lines`;
+      document.getElementById('improvedWords').textContent = improvedWords;
+      document.getElementById('improvedLines').textContent = `${improvedLines} lines`;
+      document.getElementById('jdMeta').textContent = `${jdWords} words · ${jdLines} lines`;
+      document.getElementById('resumeMeta').textContent = `${resumeWords} words · ${resumeLines} lines`;
+
+      const readiness = (!jdWords && !resumeWords) ? 0 : ((jdWords > 0 ? 50 : 0) + (resumeWords > 0 ? 50 : 0));
+      if (readiness < 100) {
+        setHero('Intake', 'Provide both required inputs before running the analysis.', `${readiness}%`, 'Fill both fields to unlock the first stage.');
+        setStage('intake', 'running', jdWords || resumeWords ? 'One input is ready. Add the other to continue.' : 'Waiting for job description and resume.');
+      } else if (document.getElementById('analyzeBtn').disabled === false) {
+        setHero('Ready To Analyze', 'Both inputs look populated and ready for the first run.', '100%', 'The first fit analysis can start now.');
+        setStage('intake', 'running', 'Both inputs look ready for analysis.');
+      }
+
+      document.getElementById('consentState').textContent = pipelineState.consent;
+      document.getElementById('consentMeta').textContent = pipelineState.consent === 'Approved'
+        ? 'Rewrite stage is enabled.'
+        : pipelineState.consent === 'Skipped'
+          ? 'Workflow stopped after the first report.'
+          : 'Decide after the first fit report.';
+    }
+
+    class PipelinePanel {
+      constructor(containerId, steps, titleText) {
+        this.cid = containerId;
+        this.prefix = containerId.replace(/[^a-z0-9]/gi, '');
+        this.steps = steps;
+        this.title = titleText;
+        this.activeIdx = -1;
+        this.stepStart = 0;
+        this.timerStart = 0;
+        this.timerHandle = null;
+        this.render();
+      }
+
+      render() {
+        document.getElementById(this.cid).innerHTML = `
+          <div class="pipeline-panel" id="${this.prefix}-panel">
+            <div class="pipeline-header">
+              <span class="pipeline-title">${this.title}</span>
+              <span class="pipeline-timer" id="${this.prefix}-timer">0:00</span>
+            </div>
+            <div class="pipeline-steps" id="${this.prefix}-steps"></div>
+            <div class="pipeline-status" id="${this.prefix}-status">Starting…</div>
+          </div>`;
+        this.startTimer();
+        this.activateStep(0);
+      }
+
+      startTimer() {
+        this.timerStart = Date.now();
+        this.timerHandle = setInterval(() => {
+          const el = document.getElementById(`${this.prefix}-timer`);
+          if (!el) return;
+          const seconds = Math.floor((Date.now() - this.timerStart) / 1000);
+          el.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+        }, 1000);
+      }
+
+      stopTimer() {
+        clearInterval(this.timerHandle);
+        this.timerHandle = null;
+      }
+
+      checkSvg() {
+        return `<span class="step-check"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      }
+
+      activateStep(idx) {
+        const step = this.steps[idx];
+        if (!step) return;
+        const stepsEl = document.getElementById(`${this.prefix}-steps`);
+        let el = document.getElementById(`${this.prefix}-s${idx}`);
+        if (!el) {
+          el = document.createElement('div');
+          el.id = `${this.prefix}-s${idx}`;
+          stepsEl.appendChild(el);
+        }
+        this.activeIdx = idx;
+        this.stepStart = Date.now();
+        el.className = 'pipeline-step active';
+        el.innerHTML = `<span class="step-icon-box">${step.icon}</span><span>${step.label}</span><span class="step-state"><span class="step-spinner"></span></span><span class="step-duration"></span>`;
+      }
+
+      completeKnownStep(idx) {
+        const step = this.steps[idx];
+        if (!step) return;
+        const stepsEl = document.getElementById(`${this.prefix}-steps`);
+        let el = document.getElementById(`${this.prefix}-s${idx}`);
+        if (!el) {
+          el = document.createElement('div');
+          el.id = `${this.prefix}-s${idx}`;
+          stepsEl.appendChild(el);
+        }
+        el.className = 'pipeline-step done';
+        el.innerHTML = `<span class="step-icon-box">${step.icon}</span><span>${step.label}</span><span class="step-state">${this.checkSvg()}</span><span class="step-duration"></span>`;
+      }
+
+      completeStep(idx) {
+        const el = document.getElementById(`${this.prefix}-s${idx}`);
+        if (!el) return;
+        el.className = 'pipeline-step done';
+        const stateEl = el.querySelector('.step-state');
+        if (stateEl) stateEl.innerHTML = this.checkSvg();
+        const durEl = el.querySelector('.step-duration');
+        if (durEl) durEl.textContent = `${((Date.now() - this.stepStart) / 1000).toFixed(1)}s`;
+      }
+
+      handleEvent(event) {
+        if (event.type !== 'step') return;
+        const label = String(event.label || '').toLowerCase();
+        const idx = this.steps.findIndex(step => step.label.toLowerCase() === label);
+        if (idx >= 0) {
+          for (let i = 0; i <= idx; i++) {
+            const el = document.getElementById(`${this.prefix}-s${i}`);
+            if (el && el.classList.contains('active')) this.completeStep(i);
+            else if (!el) this.completeKnownStep(i);
+          }
+          if (idx + 1 < this.steps.length) this.activateStep(idx + 1);
+        } else {
+          if (this.activeIdx >= 0) this.completeStep(this.activeIdx);
+          const next = this.activeIdx + 1;
+          if (next < this.steps.length) this.activateStep(next);
+        }
+        const statusEl = document.getElementById(`${this.prefix}-status`);
+        if (statusEl) statusEl.textContent = `${event.icon || ''} ${event.label || ''}`.trim();
+      }
+
+      finish(text = 'Complete.') {
+        this.stopTimer();
+        if (this.activeIdx >= 0) this.completeStep(this.activeIdx);
+        const statusEl = document.getElementById(`${this.prefix}-status`);
+        if (statusEl) statusEl.textContent = text;
+      }
+    }
+
+    const FIT_STEPS = [
+      { icon: '📋', label: 'Parsing job description' },
+      { icon: '📄', label: 'Analyzing resume' },
+      { icon: '📊', label: 'Scoring fit' },
+      { icon: '📝', label: 'Generating report' },
+    ];
+
+    const IMPROVE_STEPS = [
+      { icon: '🎯', label: 'Extracting enhancement targets' },
+      { icon: '🔍', label: 'Auditing current resume' },
+      { icon: '✍️', label: 'Rewriting and enhancing' },
+      { icon: '📋', label: 'Generating report' },
+    ];
+
+    async function streamSSE(url, body, onEvent) {
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body || {}),
+        });
+      } catch (error) {
+        onEvent({ type: 'error', text: String(error) });
+        return;
+      }
+
+      if (!response.ok) {
+        let message = response.statusText;
+        try {
+          const payload = await response.json();
+          message = payload.error || message;
+        } catch {}
+        onEvent({ type: 'error', text: message });
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() || '';
+        for (const chunk of chunks) {
+          const line = chunk.trim();
+          if (!line || line.startsWith(':')) continue;
+          const data = line.replace(/^data:\s*/, '');
+          if (!data) continue;
+          try {
+            onEvent(JSON.parse(data));
+          } catch {}
+        }
+      }
+    }
+
+    function renderStructuredResult(targetId, text) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const clean = stripFences(text);
+      el.innerHTML = isStructuredHtml(clean)
+        ? DOMPurify.sanitize(clean)
+        : `<div class="notice-banner">${escHtml(clean)}</div>`;
+      show(targetId);
+    }
+
+    function addError(targetId, text) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.insertAdjacentHTML('beforeend', `<div class="error-banner">${escHtml(String(text))}</div>`);
+    }
+
+    function reenableInputs() {
+      document.getElementById('analyzeBtn').disabled = false;
+      document.getElementById('jdText').disabled = false;
+      document.getElementById('resumeText').disabled = false;
+      updateAnalyzeButton();
+    }
+
+    function lockInputs() {
+      document.getElementById('analyzeBtn').disabled = true;
+      document.getElementById('jdText').disabled = true;
+      document.getElementById('resumeText').disabled = true;
+    }
+
+    function clearInputs() {
+      if (document.getElementById('jdText').disabled || document.getElementById('resumeText').disabled) return;
+      document.getElementById('jdText').value = '';
+      document.getElementById('resumeText').value = '';
+      updateAnalyzeButton();
+      updateMetrics();
+      document.getElementById('inputHint').textContent = 'Fill both fields to continue.';
+      document.getElementById('inputHint').style.color = 'var(--text-dim)';
+    }
+
+    async function readTextFile(file) {
+      const text = await file.text();
+      if (/\u0000/.test(text)) {
+        throw new Error('This file looks binary. Paste extracted text instead.');
+      }
+      return text;
+    }
+
+    function bindTextUpload(inputId, targetId) {
+      document.getElementById(inputId).addEventListener('change', async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+          const text = await readTextFile(file);
+          document.getElementById(targetId).value = text.trim();
+          document.getElementById('inputHint').textContent = `${file.name} loaded.`;
+          document.getElementById('inputHint').style.color = 'var(--text-dim)';
+        } catch (error) {
+          document.getElementById('inputHint').textContent = String(error.message || error);
+          document.getElementById('inputHint').style.color = 'var(--danger)';
+        } finally {
+          event.target.value = '';
+          updateAnalyzeButton();
+          updateMetrics();
+        }
+      });
+    }
+
+    function updateAnalyzeButton() {
+      const jd = document.getElementById('jdText').value.trim();
+      const resume = document.getElementById('resumeText').value.trim();
+      const button = document.getElementById('analyzeBtn');
+      const hint = document.getElementById('inputHint');
+      button.disabled = !(jd && resume);
+      if (jd && resume) {
+        hint.textContent = 'Inputs look complete. Start the first fit analysis when ready.';
+        hint.style.color = 'var(--text-dim)';
+      } else {
+        hint.textContent = 'Fill both fields to continue.';
+        hint.style.color = 'var(--text-dim)';
+      }
+    }
+
+    async function startAnalysis() {
+      const jd = document.getElementById('jdText').value.trim();
+      const resume = document.getElementById('resumeText').value.trim();
+      if (!jd || !resume) {
+        document.getElementById('inputHint').textContent = 'Both fields are required before analysis can start.';
+        document.getElementById('inputHint').style.color = 'var(--danger)';
+        return;
+      }
+
+      pipelineState.originalResume = resume;
+      pipelineState.improvedResume = '';
+      pipelineState.fitReport = '';
+      pipelineState.finalReport = '';
+      pipelineState.consent = 'Pending';
+
+      lockInputs();
+      setBadge('badge1', 'done', 'Locked');
+      setBadge('badge2', 'running', 'Running');
+      setStage('intake', 'done', 'Inputs locked for this run.');
+      setStage('fit', 'running', 'Analyzing fit against the provided role.');
+      setStage('improve', 'waiting', 'Waiting for your decision after the report.');
+      setStage('reanalyze', 'waiting', 'Review the improved resume before rerunning.');
+      setHero('Fit Analysis', 'The first report is being generated now.', '100%', 'Inputs are locked while the first analysis runs.');
+      setWorkflowStatus('The fit analyzer is running. You will see the full report and then decide whether to continue into resume improvement.');
+
+      document.getElementById('fitProgress').innerHTML = '';
+      document.getElementById('fitResult').innerHTML = '';
+      hide('fitResult');
+      hide('consentPanel');
+      hide('phase3');
+      hide('phase4');
+      hide('reviewPanel');
+      hide('improveResult');
+      hide('reanalyzeResult');
+      hide('completionPanel');
+      show('phase2');
+      scrollToId('phase2');
+
+      const panel = new PipelinePanel('fitProgress', FIT_STEPS, 'First Fit Analysis');
+
+      await streamSSE('/pipeline/analyze', { resume_text: resume, job_description: jd }, (event) => {
+        if (event.type === 'step') {
+          panel.handleEvent(event);
+        } else if (event.type === 'result') {
+          panel.finish('First fit analysis complete. Review the report below.');
+          pipelineState.fitReport = event.text || '';
+          setBadge('badge2', 'done', 'Complete');
+          setStage('fit', 'done', 'First report generated.');
+          setHero('Review Report', 'The first fit analysis is ready for review.', '100%', 'Decide whether to stop here or continue into resume improvement.');
+          setWorkflowStatus('The first report is ready. Review the reasoning, then choose whether to generate an improved resume.');
+          renderStructuredResult('fitResult', event.text || '');
+          show('consentPanel');
+          scrollToId('fitResult');
+          updateMetrics();
+        } else if (event.type === 'error') {
+          panel.stopTimer();
+          setBadge('badge2', 'error', 'Error');
+          setStage('fit', 'error', 'Analysis failed. Check the error and retry.');
+          setHero('Fit Analysis Error', 'The first analysis failed before a report was produced.', '100%', 'You can correct the inputs or retry now.');
+          setWorkflowStatus('The fit analysis failed. Inputs were re-enabled so you can adjust and try again.');
+          addError('fitProgress', event.text);
+          reenableInputs();
+        }
+      });
+    }
+
+    function skipImprovement() {
+      pipelineState.consent = 'Skipped';
+      setBadge('badge3', 'skipped', 'Skipped');
+      setBadge('badge4', 'skipped', 'Skipped');
+      setStage('improve', 'skipped', 'You stopped after the initial fit analysis.');
+      setStage('reanalyze', 'skipped', 'Final re-analysis was not run.');
+      setHero('Analysis Complete', 'You chose to stop after the first report.', '100%', 'Restart when you want to evaluate another role or resume.');
+      setWorkflowStatus('The workflow stopped after the first report. You can restart any time from the same page.');
+      hide('consentPanel');
+      show('completionPanel');
+      document.getElementById('completionPanel').innerHTML = `
+        <div class="completion-title">Stopped after the first fit analysis</div>
+        <div class="completion-list">
+          <div>The initial report remains visible for review.</div>
+          <div>No rewrite or final re-analysis was run for this session.</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" type="button" onclick="restartPipeline()">Start New Analysis</button>
+        </div>`;
+      show('phase4');
+      setBadge('badge4', 'skipped', 'Stopped');
+      updateMetrics();
+      scrollToId('completionPanel');
+    }
+
+    async function startImprovement() {
+      pipelineState.consent = 'Approved';
+      updateMetrics();
+      hide('consentPanel');
+      show('phase3');
+      scrollToId('phase3');
+      document.getElementById('improveProgress').innerHTML = '';
+      document.getElementById('improveResult').innerHTML = '';
+      hide('improveResult');
+      hide('reviewPanel');
+
+      setBadge('badge3', 'running', 'Running');
+      setStage('improve', 'running', 'Generating an updated resume draft.');
+      setHero('Resume Improvement', 'The rewrite stage is using the fit report as guidance.', '100%', 'You will be able to edit the result before the final re-analysis.');
+      setWorkflowStatus('The rewrite is running now. Once it finishes, review and edit the improved resume before the final check.');
+
+      const panel = new PipelinePanel('improveProgress', IMPROVE_STEPS, 'Resume Improvement');
+      await streamSSE('/pipeline/improve', {}, (event) => {
+        if (event.type === 'step') {
+          panel.handleEvent(event);
+        } else if (event.type === 'result') {
+          panel.finish('Resume rewrite complete. Review the generated content before rerunning fit analysis.');
+          pipelineState.improvedResume = event.improved_resume || '';
+          setBadge('badge3', 'done', 'Complete');
+          setStage('improve', 'done', 'Improved draft ready for review.');
+          setStage('reanalyze', 'running', 'Waiting for you to confirm the edited draft.');
+          setHero('Review Improved Resume', 'The rewrite is ready. Edit it before the final fit check.', '100%', 'The final analysis will use whatever text is in the editable panel.');
+          setWorkflowStatus('The rewrite is ready. Review the draft carefully, make any edits you want, then run the updated fit check.');
+          renderStructuredResult('improveResult', event.text || '');
+          document.getElementById('originalResumePreview').textContent = pipelineState.originalResume || 'No original resume captured.';
+          document.getElementById('reviewedResumeText').value = pipelineState.improvedResume || '';
+          show('reviewPanel');
+          updateMetrics();
+          scrollToId('reviewPanel');
+        } else if (event.type === 'error') {
+          panel.stopTimer();
+          setBadge('badge3', 'error', 'Error');
+          setStage('improve', 'error', 'Rewrite failed. Review the error and restart if needed.');
+          setHero('Improvement Error', 'The rewrite failed before a usable draft was produced.', '100%', 'The first fit report is still available above.');
+          setWorkflowStatus('The rewrite failed. Review the error and restart if you want to try again.');
+          addError('improveProgress', event.text);
+        }
+      });
+    }
+
+    async function startReanalysis() {
+      const reviewedResume = document.getElementById('reviewedResumeText').value.trim();
+      if (!reviewedResume) {
+        document.getElementById('reviewHint').textContent = 'Add resume content before running the updated fit check.';
+        document.getElementById('reviewHint').style.color = 'var(--danger)';
+        return;
+      }
+
+      document.getElementById('reanalyzeBtn').disabled = true;
+      document.getElementById('reviewHint').textContent = 'Running the updated fit check on the reviewed resume.';
+      document.getElementById('reviewHint').style.color = 'var(--text-dim)';
+      document.getElementById('reanalyzeProgress').innerHTML = '';
+      document.getElementById('reanalyzeResult').innerHTML = '';
+      hide('reanalyzeResult');
+      hide('completionPanel');
+      show('phase4');
+      scrollToId('phase4');
+
+      setBadge('badge4', 'running', 'Running');
+      setStage('reanalyze', 'running', 'Rechecking fit using the reviewed resume.');
+      setHero('Updated Fit Check', 'The final report is now being generated.', '100%', 'This run uses the reviewed resume text from the editor.');
+      setWorkflowStatus('The updated fit check is running now. This final report will reflect your reviewed resume draft.');
+
+      const panel = new PipelinePanel('reanalyzeProgress', FIT_STEPS, 'Updated Fit Analysis');
+      await streamSSE('/pipeline/reanalyze', { resume_text: reviewedResume }, (event) => {
+        if (event.type === 'step') {
+          panel.handleEvent(event);
+        } else if (event.type === 'result') {
+          panel.finish('Updated fit analysis complete.');
+          pipelineState.finalReport = event.text || '';
+          pipelineState.improvedResume = reviewedResume;
+          setBadge('badge4', 'done', 'Complete');
+          setStage('reanalyze', 'done', 'Final report generated from the reviewed resume.');
+          setHero('Workflow Complete', 'You now have the rewritten resume and its updated fit report.', '100%', 'Restart to evaluate another resume or role.');
+          setWorkflowStatus('The workflow is complete. Keep the improved resume, compare outcomes, or start over with a different job description.');
+          renderStructuredResult('reanalyzeResult', event.text || '');
+          document.getElementById('reviewHint').textContent = 'The final report now reflects the reviewed resume text.';
+          show('completionPanel');
+          updateMetrics();
+          scrollToId('reanalyzeResult');
+        } else if (event.type === 'error') {
+          panel.stopTimer();
+          setBadge('badge4', 'error', 'Error');
+          setStage('reanalyze', 'error', 'Final fit check failed. You can edit the resume and retry.');
+          setHero('Re-Analysis Error', 'The final fit check failed.', '100%', 'You can revise the edited resume and try again without restarting the whole flow.');
+          setWorkflowStatus('The updated fit check failed. You can adjust the edited resume and rerun only this final stage.');
+          addError('reanalyzeProgress', event.text);
+          document.getElementById('reviewHint').textContent = 'The final fit check failed. Adjust the resume and try again.';
+          document.getElementById('reviewHint').style.color = 'var(--danger)';
+        }
+        document.getElementById('reanalyzeBtn').disabled = false;
+      });
+    }
+
+    async function copyImprovedResume() {
+      const text = document.getElementById('reviewedResumeText').value.trim();
+      if (!text) {
+        document.getElementById('reviewHint').textContent = 'There is no improved resume text to copy yet.';
+        document.getElementById('reviewHint').style.color = 'var(--danger)';
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById('reviewHint').textContent = 'Improved resume copied to clipboard.';
+        document.getElementById('reviewHint').style.color = 'var(--text-dim)';
+      } catch {
+        document.getElementById('reviewHint').textContent = 'Clipboard access is not available in this browser context.';
+        document.getElementById('reviewHint').style.color = 'var(--danger)';
+      }
+    }
+
+    function restartPipeline() {
+      ['phase2', 'phase3', 'phase4', 'consentPanel', 'reviewPanel', 'fitResult', 'improveResult', 'reanalyzeResult', 'completionPanel'].forEach(hide);
+      ['fitProgress', 'fitResult', 'improveProgress', 'improveResult', 'reanalyzeProgress', 'reanalyzeResult'].forEach((id) => {
+        document.getElementById(id).innerHTML = '';
+      });
+      document.getElementById('reviewedResumeText').value = '';
+      document.getElementById('originalResumePreview').textContent = '';
+      document.getElementById('completionPanel').innerHTML = defaultCompletionMarkup;
+      pipelineState.originalResume = '';
+      pipelineState.improvedResume = '';
+      pipelineState.fitReport = '';
+      pipelineState.finalReport = '';
+      pipelineState.consent = 'Pending';
+
+      setBadge('badge1', '', 'Ready');
+      setBadge('badge2', '', 'Waiting');
+      setBadge('badge3', '', 'Waiting');
+      setBadge('badge4', '', 'Waiting');
+      setStage('intake', 'running', 'Waiting for job description and resume.');
+      setStage('fit', 'waiting', 'Not started yet.');
+      setStage('improve', 'waiting', 'Runs only after your approval.');
+      setStage('reanalyze', 'waiting', 'Review the rewrite before rerunning.');
+      setHero('Intake', 'Ready for job description and resume text.', '0%', 'Fill both required inputs to unlock analysis.');
+      setWorkflowStatus('This page is designed as a guided flow, not a free-form chat. Each stage keeps its artifacts visible so you do not have to move data manually.');
+      document.getElementById('inputHint').textContent = 'Fill both fields to continue.';
+      document.getElementById('inputHint').style.color = 'var(--text-dim)';
+      document.getElementById('reviewHint').textContent = 'You can fine-tune wording here before the final analysis.';
+      document.getElementById('reviewHint').style.color = 'var(--text-dim)';
+
+      reenableInputs();
+      updateMetrics();
+      scrollToId('phase1');
+    }
+
+    document.getElementById('jdText').addEventListener('input', () => {
+      updateAnalyzeButton();
+      updateMetrics();
+    });
+    document.getElementById('resumeText').addEventListener('input', () => {
+      updateAnalyzeButton();
+      updateMetrics();
+    });
+    document.getElementById('reviewedResumeText').addEventListener('input', updateMetrics);
+
+    bindTextUpload('jdFileInput', 'jdText');
+    bindTextUpload('resumeFileInput', 'resumeText');
+    updateAnalyzeButton();
+    updateMetrics();
+  </script>
+</body>
+</html>

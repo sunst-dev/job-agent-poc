@@ -5,9 +5,8 @@ from __future__ import annotations
 from crewai import Agent as CrewAgent, Crew, Task
 
 from .base import Agent
+from agent_test.config import CHAT_TEMPERATURE, DEFAULT_MODEL
 from agent_test.utils.openrouter_client import get_crew_llm
-
-DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
 
 
 class CrewAIAgent(Agent):
@@ -34,7 +33,7 @@ class CrewAIAgent(Agent):
     def __init__(
         self,
         model: str = DEFAULT_MODEL,
-        temperature: float = 0.2,
+        temperature: float = CHAT_TEMPERATURE,
         role: str = "Helpful AI assistant",
         goal: str = "Answer the user's questions accurately and concisely.",
         backstory: str = (
